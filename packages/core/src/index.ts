@@ -3,6 +3,7 @@ export * from './schemas.ts';
 export { defineRule, type RuleDefinition } from './define-rule.ts';
 export { DISCLAIMER, evaluateCapture, scanRepo, scanSite, type ScanOptions } from './engine.ts';
 export { findingId } from './finding-id.ts';
+export { contentHash, type StoredJudgments } from './judgments.ts';
 export {
   CONFIG_FILE,
   ConfigError,
@@ -13,8 +14,21 @@ export {
   loadConfig,
 } from './intake.ts';
 export { formatText } from './report/text.ts';
-export { captureSite, PlaywrightMissingError, userAgent, type CaptureOptions } from './runtime/crawler.ts';
+export { captureSite, pickFollowLinks, PlaywrightMissingError, userAgent, type CaptureOptions } from './runtime/crawler.ts';
 export { jsxAttributeString, lineRange, parseSource, ts, walk } from './static/ast.ts';
 export { fileKind, isNonShippingFile, type FileKind } from './static/file-kinds.ts';
+export {
+  ancestors,
+  calleeText,
+  importsOf,
+  isTruthyLiteral,
+  markupText,
+  objectProp,
+  propertyName,
+  scriptText,
+  stringValue,
+  type ImportBinding,
+} from './static/js.ts';
 export { buildRepoIndex } from './static/repo-index.ts';
+export { listRoutes, type RouteInfo } from './static/routes.ts';
 export { LineMap, stripCssComments, stripHtmlComments } from './static/text.ts';

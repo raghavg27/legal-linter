@@ -28,13 +28,18 @@ export interface ApplicabilityResult {
   missing?: (keyof Intake)[];
 }
 
+/** What a detector may read besides the repo or capture. */
+export interface DetectContext {
+  intake: Intake | null;
+}
+
 export interface Rule {
   meta: RuleMeta;
   legal: LegalText;
   fix: FixGuidance;
   applies(intake: Intake | null): ApplicabilityResult;
-  detectStatic?(repo: RepoIndex): Promise<RawFinding[]>;
-  detectRuntime?(site: SiteCapture): RawFinding[];
+  detectStatic?(repo: RepoIndex, ctx: DetectContext): Promise<RawFinding[]>;
+  detectRuntime?(site: SiteCapture, ctx: DetectContext): RawFinding[];
 }
 
 // ---------- Evidence and findings ----------
@@ -74,6 +79,10 @@ export interface RawFinding {
   evidence: Evidence[];
   /** Two sentences: what was observed, then the risk it creates. */
   explanation: string;
+  /** This finding depends on intake answers the rule-level check does not cover. */
+  needsIntake?: (keyof Intake)[];
+  /** The detector cannot decide alone; the host agent answers this. The engine adds the content hash. */
+  judgment?: Omit<JudgmentRequest, 'contentHash'>;
 }
 
 export interface IntakeQuestion {
@@ -81,9 +90,16 @@ export interface IntakeQuestion {
   question: string;
 }
 
+export interface JudgmentOption {
+  value: string;
+  /** open: the finding stands (at high confidence). drop: the finding is removed. */
+  outcome: 'open' | 'drop';
+  meaning: string;
+}
+
 export interface JudgmentRequest {
   question: string;
-  options: { value: string; outcome: 'open' | 'drop'; meaning: string }[];
+  options: JudgmentOption[];
   material: { label: string; file?: string; lines?: [number, number]; content: string }[];
   contentHash: string;
 }

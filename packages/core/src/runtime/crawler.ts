@@ -12,6 +12,40 @@ export interface CaptureOptions {
    * response, so nothing leaves the machine. Used by the test suite.
    */
   offline?: boolean;
+  /** Pages to visit including the start page. Extra pages are same-origin links that rules care about. Default 5. */
+  maxPages?: number;
+}
+
+/** Links worth following from the start page: pricing for LL-04, copyright/DMCA for LL-05, legal pages generally. */
+const RELEVANT_LINK = /\b(pricing|plans?|upgrade|subscribe|subscriptions?|billing|dmca|copyright|terms|legal)\b/i;
+
+/** Same-origin links from the start page whose path or text matches RELEVANT_LINK, pricing first. */
+export function pickFollowLinks(start: PageCapture, max: number): string[] {
+  if (max <= 0) return [];
+  const origin = new URL(start.finalUrl).origin;
+  const seen = new Set([stripHash(start.finalUrl)]);
+  const picked: { url: string; rank: number }[] = [];
+  for (const link of start.links) {
+    let url: URL;
+    try {
+      url = new URL(link.href);
+    } catch {
+      continue;
+    }
+    const key = stripHash(url.href);
+    if (url.origin !== origin || seen.has(key)) continue;
+    const haystack = `${url.pathname} ${link.text}`;
+    if (!RELEVANT_LINK.test(haystack)) continue;
+    seen.add(key);
+    picked.push({ url: key, rank: /pricing|plans?/i.test(haystack) ? 0 : 1 });
+  }
+  return picked.sort((a, b) => a.rank - b.rank).slice(0, max).map((p) => p.url);
+}
+
+function stripHash(url: string): string {
+  const u = new URL(url);
+  u.hash = '';
+  return u.href;
 }
 
 export function userAgent(version: string): string {
@@ -56,6 +90,10 @@ async function capturePage(context: BrowserContext, url: string, timeoutMs: numb
       resourceType: req.resourceType(),
       msSinceNavigation: Date.now() - navigationStart,
     });
+  });
+  // Some replay tools (Hotjar) stream recordings over a websocket, which is not a "request" event.
+  page.on('websocket', (ws) => {
+    requests.push({ url: ws.url(), method: 'GET', resourceType: 'websocket', msSinceNavigation: Date.now() - navigationStart });
   });
 
   const capture: PageCapture = {
@@ -108,9 +146,18 @@ export async function captureSite(url: string, opts: CaptureOptions): Promise<Si
           ? route.continue()
           : route.fulfill({ status: 200, contentType: 'text/plain', body: '' }),
       );
+      // Websockets bypass route(); a handler that never calls connectToServer() keeps them local.
+      await context.routeWebSocket(/.*/, () => {});
     }
-    const page = await capturePage(context, url, opts.timeoutMs ?? 30_000);
-    return { startUrl: url, userAgent: ua, pages: [page] };
+    const timeout = opts.timeoutMs ?? 30_000;
+    const start = await capturePage(context, url, timeout);
+    const pages = [start];
+    if (!start.error) {
+      for (const next of pickFollowLinks(start, (opts.maxPages ?? 5) - 1)) {
+        pages.push(await capturePage(context, next, timeout));
+      }
+    }
+    return { startUrl: url, userAgent: ua, pages };
   } finally {
     await context.close();
     if (ownBrowser) await browser.close();

@@ -11,11 +11,11 @@ function hostOf(url: string): string | null {
   }
 }
 
+/** One finding per site: the same font requests usually repeat on every page visited. */
 export function detectRuntime(site: SiteCapture): RawFinding[] {
-  const findings: RawFinding[] = [];
+  const seen = new Set<string>();
+  const evidence: RuntimeEvidence[] = [];
   for (const page of site.pages) {
-    const seen = new Set<string>();
-    const evidence: RuntimeEvidence[] = [];
     for (const req of page.requests) {
       const host = hostOf(req.url);
       if (!host || !FONT_HOSTS.has(host) || seen.has(req.url)) continue;
@@ -29,17 +29,17 @@ export function detectRuntime(site: SiteCapture): RawFinding[] {
         observed: `Request to ${host} before any interaction`,
       });
     }
-    if (evidence.length === 0) continue;
-
-    const pageUrl = new URL(page.finalUrl);
-    findings.push({
-      key: `${pageUrl.origin}${pageUrl.pathname}`,
+  }
+  if (evidence.length === 0) return [];
+  const n = evidence.length;
+  return [
+    {
+      key: new URL(site.startUrl).origin,
       confidence: 'high',
       evidence: evidence.slice(0, MAX_EVIDENCE),
       explanation:
-        `On first load, before any click, this page requested ${evidence.length} ${evidence.length === 1 ? 'file' : 'files'} from Google's font servers, so the visitor's browser sent its IP address to Google before any consent. ` +
+        `On first load, before any click, the site requested ${n} ${n === 1 ? 'file' : 'files'} from Google's font servers, so the visitor's browser sent its IP address to Google before any consent. ` +
         'For EU visitors, this is the pattern behind the 2022 Munich court ruling and the wave of warning letters that followed.',
-    });
-  }
-  return findings;
+    },
+  ];
 }

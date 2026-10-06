@@ -1,0 +1,1 @@
+{ "name": "fires-logrocket-vite", "private": true, "type": "module", "dependencies": { "logrocket": "9.0.0", "react": "19.0.0", "react-dom": "19.0.0" }, "devDependencies": { "vite": "6.0.0" } }

@@ -1,0 +1,1 @@
+{ "name": "pass-clarity-consent-callback", "private": true, "type": "module", "dependencies": { "@microsoft/clarity": "1.0.0", "vanilla-cookieconsent": "3.0.1" }, "devDependencies": { "vite": "6.0.0" } }

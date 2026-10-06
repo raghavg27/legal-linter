@@ -1,0 +1,11 @@
+{
+  "description": "Live page loads Clarity and sends to its collect endpoint on first load",
+  "mode": "runtime",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "high",
+      "evidence": [{ "requestUrl": "https://www.clarity.ms/tag/abc123" }, { "requestUrl": "https://k.clarity.ms/collect" }]
+    }
+  ]
+}

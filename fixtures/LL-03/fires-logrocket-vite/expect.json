@@ -1,0 +1,5 @@
+{
+  "description": "Vite + React: LogRocket.init at module top level in main.tsx",
+  "mode": "static",
+  "expect": [{ "status": "open", "confidence": "high", "evidence": [{ "file": "src/main.tsx", "line": 5 }] }]
+}

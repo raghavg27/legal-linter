@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="utf-8" /><title>Banner</title></head>
+  <body>
+    <h1>Welcome</h1>
+    <div role="dialog">
+      <p>We record how you use this site (clicks, scrolling, page changes) to improve it, only if you agree.</p>
+      <button id="accept">Accept</button>
+    </div>
+    <script>
+      document.getElementById('accept').addEventListener('click', function () {
+        var s = document.createElement('script');
+        s.src = 'https://www.clarity.ms/tag/abc123';
+        document.head.appendChild(s);
+      });
+    </script>
+  </body>
+</html>

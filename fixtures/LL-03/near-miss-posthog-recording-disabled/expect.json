@@ -1,0 +1,1 @@
+{ "description": "PostHog installed and started on load, but with session recording disabled in code", "mode": "static", "expect": [] }

@@ -1,0 +1,5 @@
+{
+  "description": "LogRocket on load with no legal-lint.config.json: needs the countries answer",
+  "mode": "static",
+  "expect": [{ "status": "needs_intake", "confidence": "high", "evidence": [{ "file": "src/main.tsx", "line": 5 }] }]
+}

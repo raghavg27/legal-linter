@@ -1,0 +1,1 @@
+{ "description": "PostHogProvider with opt_out_capturing_by_default: nothing is captured until opt-in", "mode": "static", "expect": [] }

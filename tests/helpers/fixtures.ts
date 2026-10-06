@@ -6,7 +6,7 @@ export const FIXTURES_DIR = path.resolve(import.meta.dirname, '../../fixtures');
 
 export type FixtureCategory = 'fires' | 'pass' | 'near-miss' | 'intake';
 
-export type ExpectedEvidence = { file: string; line: number } | { requestUrl: string };
+export type ExpectedEvidence = { file: string; line: number } | { requestUrl: string } | { absent: string };
 
 export interface ExpectedFinding {
   status: FindingStatus;
@@ -68,7 +68,7 @@ export function toComparable(findings: Finding[]): ExpectedFinding[] {
     evidence: f.evidence.map((e): ExpectedEvidence => {
       if (e.kind === 'static') return { file: e.file, line: e.startLine };
       if (e.kind === 'runtime') return { requestUrl: e.requestUrl };
-      throw new Error('absence evidence is not used by any fixture yet');
+      return { absent: e.observed };
     }),
   }));
   return sortComparable(shaped);

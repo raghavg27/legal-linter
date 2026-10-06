@@ -1,0 +1,1 @@
+{ "description": "Clarity initialised only inside vanilla-cookieconsent's onConsent callback", "mode": "static", "expect": [] }

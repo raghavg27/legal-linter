@@ -1,0 +1,5 @@
+{
+  "description": "PostHog initialised on load with recording not disabled in code: depends on project settings, so medium",
+  "mode": "static",
+  "expect": [{ "status": "open", "confidence": "medium", "evidence": [{ "file": "instrumentation-client.ts", "line": 3 }] }]
+}

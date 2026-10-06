@@ -1,0 +1,1 @@
+{ "name": "fires-posthog-default", "private": true, "dependencies": { "next": "15.0.0", "posthog-js": "1.200.0", "react": "19.0.0", "react-dom": "19.0.0" } }

@@ -1,0 +1,1 @@
+{ "description": "fires-runtime-clarity after the fix guidance: Clarity loads only from the banner's accept handler", "mode": "runtime", "expect": [] }

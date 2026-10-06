@@ -1,0 +1,1 @@
+{ "name": "near-miss-posthog-recording-disabled", "private": true, "type": "module", "dependencies": { "posthog-js": "1.200.0", "react": "19.0.0" }, "devDependencies": { "vite": "6.0.0" } }

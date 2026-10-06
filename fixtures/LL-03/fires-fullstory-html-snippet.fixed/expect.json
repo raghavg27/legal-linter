@@ -1,0 +1,1 @@
+{ "description": "fires-fullstory-html-snippet after the fix guidance: snippet blocked as text/plain until the consent manager enables it", "mode": "static", "expect": [] }

@@ -1,0 +1,14 @@
+{
+  "description": "Live page loads Hotjar and opens its recording websocket on first load",
+  "mode": "runtime",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "high",
+      "evidence": [
+        { "requestUrl": "https://static.hotjar.com/c/hotjar-3912345.js?sv=6" },
+        { "requestUrl": "wss://ws.hotjar.com/api/v2/client/ws" }
+      ]
+    }
+  ]
+}

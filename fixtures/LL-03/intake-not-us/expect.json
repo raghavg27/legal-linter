@@ -1,0 +1,1 @@
+{ "description": "Same code, but the intake lists only EU countries: no California visitors", "mode": "static", "expect": [] }

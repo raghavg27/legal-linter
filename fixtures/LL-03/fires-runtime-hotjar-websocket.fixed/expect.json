@@ -1,0 +1,1 @@
+{ "description": "fires-runtime-hotjar-websocket after the fix guidance: Hotjar loads only from the banner's accept handler", "mode": "runtime", "expect": [] }

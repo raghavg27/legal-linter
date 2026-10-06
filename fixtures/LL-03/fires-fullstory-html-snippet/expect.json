@@ -1,0 +1,5 @@
+{
+  "description": "Plain HTML: FullStory's copy-paste snippet in <head>, running on page load",
+  "mode": "static",
+  "expect": [{ "status": "open", "confidence": "high", "evidence": [{ "file": "index.html", "line": 5 }] }]
+}

@@ -1,0 +1,1 @@
+{ "description": "fires-logrocket-vite after the fix guidance: init behind stored consent and in the accept handler", "mode": "static", "expect": [] }

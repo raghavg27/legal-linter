@@ -1,0 +1,14 @@
+# Copied word for word from RULEBOOK.md (tests/rulebook-sync.test.ts enforces this).
+# doesNotApplyIf and exposureKind are ours, written from the rulebook text; see LEGAL_REVIEW.md.
+ruleId: LL-03
+name: "Session replay recording before consent"
+law: "California Invasion of Privacy Act, Penal Code §631, §637.2"
+trap: "FullStory, Hotjar, LogRocket, Clarity or PostHog recordings start at page load and capture clicks and keystrokes before the visitor is told."
+appliesWhen: "Any site with California visitors."
+doesNotApplyIf: "The site has no visitors from California."
+exposure: "$5,000 per violation in statutory damages; mostly used as settlement leverage in class demand letters."
+exposureKind: statutory_max
+detectionConfidence: "High"
+sources: []
+lastReviewed: null
+reviewStatus: draft

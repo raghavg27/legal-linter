@@ -1,0 +1,5 @@
+{
+  "description": "Next.js App Router: Hotjar.init in a client provider's useEffect, on every page load",
+  "mode": "static",
+  "expect": [{ "status": "open", "confidence": "high", "evidence": [{ "file": "app/providers.tsx", "line": 8 }] }]
+}

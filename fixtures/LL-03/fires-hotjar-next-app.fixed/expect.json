@@ -1,0 +1,1 @@
+{ "description": "fires-hotjar-next-app after the fix guidance: Hotjar.init only after an early return on missing consent", "mode": "static", "expect": [] }

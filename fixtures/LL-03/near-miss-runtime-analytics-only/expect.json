@@ -1,0 +1,1 @@
+{ "description": "PostHog analytics events (not recordings), a consent-blocked Hotjar tag, and vendor names in text", "mode": "runtime", "expect": [] }

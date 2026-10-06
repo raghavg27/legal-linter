@@ -1,0 +1,1 @@
+{ "description": "Replay vendors appear in a privacy page, comments, a test, a commented-out script and an installed-but-unused package", "mode": "static", "expect": [] }

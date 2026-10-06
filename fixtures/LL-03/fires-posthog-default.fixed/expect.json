@@ -1,0 +1,1 @@
+{ "description": "fires-posthog-default after the fix guidance: opt_out_capturing_by_default with opt-in from the banner", "mode": "static", "expect": [] }

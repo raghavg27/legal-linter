@@ -1,0 +1,1 @@
+{ "description": "LogRocket wired to a consent banner that the crawler never clicks", "mode": "runtime", "expect": [] }

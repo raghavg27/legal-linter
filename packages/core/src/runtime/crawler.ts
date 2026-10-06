@@ -79,7 +79,7 @@ function isLocalUrl(url: string): boolean {
   }
 }
 
-async function capturePage(context: BrowserContext, url: string, timeoutMs: number): Promise<PageCapture> {
+async function capturePage(context: BrowserContext, url: string, timeoutMs: number, offline: boolean): Promise<PageCapture> {
   const page = await context.newPage();
   const requests: CapturedRequest[] = [];
   let navigationStart = Date.now();
@@ -92,9 +92,14 @@ async function capturePage(context: BrowserContext, url: string, timeoutMs: numb
     });
   });
   // Some replay tools (Hotjar) stream recordings over a websocket, which is not a "request" event.
-  page.on('websocket', (ws) => {
-    requests.push({ url: ws.url(), method: 'GET', resourceType: 'websocket', msSinceNavigation: Date.now() - navigationStart });
-  });
+  const recordSocket = (wsUrl: string) =>
+    requests.push({ url: wsUrl, method: 'GET', resourceType: 'websocket', msSinceNavigation: Date.now() - navigationStart });
+  if (offline) {
+    // A mocked socket emits no "websocket" event, so record it in the handler; never calling connectToServer() keeps it local.
+    await page.routeWebSocket(/.*/, (ws) => recordSocket(ws.url()));
+  } else {
+    page.on('websocket', (ws) => recordSocket(ws.url()));
+  }
 
   const capture: PageCapture = {
     url,
@@ -146,15 +151,14 @@ export async function captureSite(url: string, opts: CaptureOptions): Promise<Si
           ? route.continue()
           : route.fulfill({ status: 200, contentType: 'text/plain', body: '' }),
       );
-      // Websockets bypass route(); a handler that never calls connectToServer() keeps them local.
-      await context.routeWebSocket(/.*/, () => {});
     }
     const timeout = opts.timeoutMs ?? 30_000;
-    const start = await capturePage(context, url, timeout);
+    const offline = Boolean(opts.offline);
+    const start = await capturePage(context, url, timeout, offline);
     const pages = [start];
     if (!start.error) {
       for (const next of pickFollowLinks(start, (opts.maxPages ?? 5) - 1)) {
-        pages.push(await capturePage(context, next, timeout));
+        pages.push(await capturePage(context, next, timeout, offline));
       }
     }
     return { startUrl: url, userAgent: ua, pages };

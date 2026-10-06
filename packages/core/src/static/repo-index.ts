@@ -107,7 +107,8 @@ function detectFrameworks(files: readonly string[], has: (name: string) => boole
 
 export async function buildRepoIndex(root: string): Promise<RepoIndex> {
   const absRoot = path.resolve(root);
-  if (!(await stat(absRoot)).isDirectory()) throw new Error(`Not a directory: ${root}`);
+  const isDir = await stat(absRoot).then((s) => s.isDirectory(), () => false);
+  if (!isDir) throw new Error(`Not a directory: ${root}`);
 
   const files = await listFiles(absRoot);
   const packages = await readPackages(absRoot, files);

@@ -134,5 +134,7 @@ export async function scanSite(
   opts: ScanOptions & { capture?: Omit<CaptureOptions, 'toolVersion'> },
 ): Promise<ScanReport> {
   const capture = await captureSite(url, { ...opts.capture, toolVersion: opts.toolVersion });
+  const failed = capture.pages.find((p) => p.error);
+  if (failed && capture.pages.every((p) => p.error)) throw new Error(`Could not load ${url}: ${failed.error}`);
   return evaluateCapture(capture, opts);
 }

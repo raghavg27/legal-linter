@@ -1,0 +1,11 @@
+{
+  "description": "multer uploads, no config: needs the hostsPublicUploads answer",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "needs_intake",
+      "confidence": "high",
+      "evidence": [{ "file": "server/index.js", "line": 4 }, { "absent": "No DMCA or copyright page naming a designated agent found" }]
+    }
+  ]
+}

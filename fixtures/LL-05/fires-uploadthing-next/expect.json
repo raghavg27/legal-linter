@@ -1,0 +1,15 @@
+{
+  "description": "Next.js + UploadThing file router and upload button, no DMCA page",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "high",
+      "evidence": [
+        { "file": "app/api/uploadthing/core.ts", "line": 3 },
+        { "file": "components/uploader.tsx", "line": 6 },
+        { "absent": "No DMCA or copyright page naming a designated agent found" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,5 @@
+{
+  "description": "A complete DMCA page, but the intake has not confirmed Copyright Office registration",
+  "mode": "static",
+  "expect": [{ "status": "needs_intake", "confidence": "medium", "evidence": [{ "file": "pages/dmca.tsx", "line": 1 }] }]
+}

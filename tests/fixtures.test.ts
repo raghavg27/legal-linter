@@ -70,3 +70,14 @@ describe('finding ids', () => {
     expect(a.findings.map((f) => f.id)).toEqual(b.findings.map((f) => f.id));
   });
 });
+
+describe('cross-rule quiet', () => {
+  // A detector that misfires on another rule's fixtures would misfire on real repos too.
+  for (const fixture of fixtures.filter((f) => f.mode === 'static' && (f.category === 'pass' || f.category === 'near-miss' || f.fixed))) {
+    it(`no rule reports an open finding on ${fixture.ruleId}/${fixture.name}`, async () => {
+      const report = await scanRepo(fixture.dir, { rules, toolVersion: VERSION });
+      expect(report.findings.filter((f) => f.status === 'open').map((f) => `${f.ruleId} ${f.id}`)).toEqual([]);
+      expect(report.rulesRun.filter((r) => r.error)).toEqual([]);
+    });
+  }
+});

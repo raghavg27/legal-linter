@@ -1,0 +1,11 @@
+{
+  "description": "Express + multer storing uploads under public/ (served statically), no DMCA page",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "high",
+      "evidence": [{ "file": "server/index.js", "line": 4 }, { "absent": "No DMCA or copyright page naming a designated agent found" }]
+    }
+  ]
+}

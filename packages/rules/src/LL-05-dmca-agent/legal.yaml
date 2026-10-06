@@ -1,0 +1,14 @@
+# Copied word for word from RULEBOOK.md (tests/rulebook-sync.test.ts enforces this).
+# doesNotApplyIf and exposureKind are ours, written from the rulebook text; see LEGAL_REVIEW.md.
+ruleId: LL-05
+name: "User uploads with no DMCA agent"
+law: "17 U.S.C. §512(c)(2)"
+trap: "Users can upload images, files or text that the app hosts publicly, and no designated agent is registered or listed."
+appliesWhen: "Any product with user-generated content."
+doesNotApplyIf: "Users cannot upload or post content that the product hosts."
+exposure: "Without an agent you lose safe harbor. Statutory damages then run $750–$30,000 per work, up to $150,000 if willful."
+exposureKind: statutory_max
+detectionConfidence: "High"
+sources: []
+lastReviewed: null
+reviewStatus: draft

@@ -1,0 +1,11 @@
+{
+  "description": "Supabase Storage uploads and a /dmca page that still has placeholders instead of agent contact details",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "medium",
+      "evidence": [{ "file": "app/dmca/page.tsx", "line": 1 }, { "absent": "No contact email for the designated agent on the DMCA page" }]
+    }
+  ]
+}

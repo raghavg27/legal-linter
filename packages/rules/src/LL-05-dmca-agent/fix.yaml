@@ -1,0 +1,78 @@
+# Fix guidance for a coding agent. Every step says why, so the agent can adapt
+# when the repo does not match the expected shape.
+ruleId: LL-05
+fixType: partial
+goal: >-
+  Publish a DMCA policy page that names a designated agent with contact
+  details, give rights holders a way to send takedown requests, and state a
+  repeat-infringer policy. The owner then registers the same agent with the US
+  Copyright Office.
+
+steps:
+  - title: Add a DMCA policy page at /dmca
+    why: >-
+      Rights holders need to find who receives copyright notices. A stable
+      /dmca route linked from the footer is where they look, and it is what the
+      re-scan checks for.
+    instructions: >-
+      Create a page with these sections: "Designated agent" (name, postal
+      address, phone and email, as placeholders like [AGENT NAME] if the owner
+      has not provided them yet), "How to send a notice" (what to include:
+      the work, where it appears on the site, contact details, a good-faith
+      statement and a signature), "Counter-notices" (how a user can respond if
+      their content was removed by mistake), and "Repeat infringers" (from the
+      next step). Use plain language; the owner can refine it.
+    variants:
+      next-app: Create app/dmca/page.tsx.
+      next-pages: Create pages/dmca.tsx.
+      vite-react: Add a /dmca route in the router and a Dmca page component.
+      remix: Create app/routes/dmca.tsx.
+      plain-html: Create dmca.html next to index.html.
+      node-server: Serve the page at GET /dmca from the server's templates.
+
+  - title: Add a way to send a takedown request
+    why: >-
+      Making notices easy to send means infringing uploads reach the agent
+      quickly instead of turning into claims.
+    instructions: >-
+      Add a short form on the /dmca page (or a mailto link to the agent's email)
+      that collects the fields listed under "How to send a notice". If there is
+      an admin area, add a way to remove or disable a reported upload.
+
+  - title: State a repeat-infringer policy
+    why: >-
+      Users should know what happens to accounts that repeatedly upload
+      infringing content, and the app needs a way to act on it.
+    instructions: >-
+      Add the policy to the /dmca page and the terms of service (for example:
+      accounts with repeated valid notices are suspended). If accounts exist,
+      make sure an admin can suspend one.
+
+  - title: Link the page from the footer and the terms
+    why: >-
+      A page nobody can find does not help rights holders reach the agent.
+    instructions: >-
+      Add a "DMCA" or "Copyright" link to the site footer and reference the page
+      from the terms of service.
+
+doneWhen:
+  - "A page at a route containing dmca or copyright names the designated agent with a contact email."
+  - "The footer links to that page."
+  - "After the owner registers the agent, legal-lint.config.json has intake.dmcaAgentRegistered set to true."
+  - "A repo re-scan reports no LL-05 finding."
+
+ownerSteps:
+  - title: Register the designated agent with the US Copyright Office
+    why: >-
+      The trap is an agent that is not registered or not listed. Registration
+      is done by the owner in the Copyright Office's online system ($6, renewed
+      every 3 years). Afterwards, set intake.dmcaAgentRegistered to true in
+      legal-lint.config.json.
+  - title: Fill in the agent's real contact details
+    why: >-
+      Placeholders on the /dmca page leave rights holders with no one to
+      contact. Use the same details as the Copyright Office registration.
+  - title: Confirm the repeat-infringer and counter-notice wording
+    why: >-
+      These describe how the owner will act on notices, so the owner should
+      confirm they match what will actually happen.

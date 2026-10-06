@@ -1,0 +1,1 @@
+{ "description": "Live page serving its font from its own domain", "mode": "runtime", "expect": [] }

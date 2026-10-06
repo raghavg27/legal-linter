@@ -1,0 +1,15 @@
+{
+  "description": "Next.js Pages Router: preconnects and a stylesheet link to Google Fonts in _document.tsx",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "high",
+      "evidence": [
+        { "file": "pages/_document.tsx", "line": 7 },
+        { "file": "pages/_document.tsx", "line": 8 },
+        { "file": "pages/_document.tsx", "line": 9 }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{ "description": "fires-runtime-css-import after the fix guidance: @import replaced by a local @font-face", "mode": "runtime", "expect": [] }

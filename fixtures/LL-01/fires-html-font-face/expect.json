@@ -1,0 +1,8 @@
+{
+  "description": "Plain HTML: @font-face src on fonts.gstatic.com in a <style> block, and an @import of Material Icons in a stylesheet",
+  "mode": "static",
+  "expect": [
+    { "status": "open", "confidence": "high", "evidence": [{ "file": "css/site.css", "line": 1 }] },
+    { "status": "open", "confidence": "high", "evidence": [{ "file": "index.html", "line": 10 }] }
+  ]
+}

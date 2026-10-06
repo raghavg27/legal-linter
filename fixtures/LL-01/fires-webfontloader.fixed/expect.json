@@ -1,0 +1,1 @@
+{ "description": "fires-webfontloader after the fix guidance: webfontloader removed, @fontsource/lato imported", "mode": "static", "expect": [] }

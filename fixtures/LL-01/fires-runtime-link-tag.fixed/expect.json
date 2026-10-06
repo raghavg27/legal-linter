@@ -1,0 +1,1 @@
+{ "description": "fires-runtime-link-tag after the fix guidance: font served from /fonts", "mode": "runtime", "expect": [] }

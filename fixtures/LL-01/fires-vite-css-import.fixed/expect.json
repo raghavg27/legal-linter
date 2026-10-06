@@ -1,0 +1,1 @@
+{ "description": "fires-vite-css-import after the fix guidance: @fontsource/roboto imported in main.tsx", "mode": "static", "expect": [] }

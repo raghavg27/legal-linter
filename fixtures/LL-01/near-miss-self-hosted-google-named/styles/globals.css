@@ -1,0 +1,9 @@
+/* Google Sans, self-hosted from /public/fonts */
+@font-face {
+  font-family: 'Google Sans';
+  src: url('/fonts/google-sans-regular.woff2') format('woff2');
+}
+
+body {
+  font-family: 'Google Sans', sans-serif;
+}

@@ -1,0 +1,5 @@
+{
+  "description": "Same trap with no legal-lint.config.json: reported as needs_intake, not open",
+  "mode": "static",
+  "expect": [{ "status": "needs_intake", "confidence": "high", "evidence": [{ "file": "app/layout.tsx", "line": 7 }] }]
+}

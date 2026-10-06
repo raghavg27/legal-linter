@@ -1,0 +1,1 @@
+{ "description": "fires-html-font-face after the fix guidance: font files under /fonts with local @font-face rules", "mode": "static", "expect": [] }

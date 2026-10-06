@@ -8,9 +8,21 @@ importers:
 
   .:
     devDependencies:
+      '@legal-lint/core':
+        specifier: workspace:*
+        version: link:packages/core
+      '@legal-lint/rules':
+        specifier: workspace:*
+        version: link:packages/rules
       '@types/node':
         specifier: ^22.20.5
         version: 22.20.5
+      legal-lint:
+        specifier: workspace:*
+        version: link:packages/cli
+      playwright:
+        specifier: 1.63.0
+        version: 1.63.0
       typescript:
         specifier: 6.0.3
         version: 6.0.3

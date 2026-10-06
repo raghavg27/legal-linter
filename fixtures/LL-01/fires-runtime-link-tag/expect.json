@@ -1,0 +1,7 @@
+{
+  "description": "Live page with a stylesheet <link> to Google Fonts: the request happens on first load",
+  "mode": "runtime",
+  "expect": [
+    { "status": "open", "confidence": "high", "evidence": [{ "requestUrl": "https://fonts.googleapis.com/css2?family=Inter&display=swap" }] }
+  ]
+}

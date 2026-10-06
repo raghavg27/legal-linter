@@ -1,0 +1,5 @@
+{
+  "description": "Next.js App Router: multi-line stylesheet <link> to Google Fonts in app/layout.tsx",
+  "mode": "static",
+  "expect": [{ "status": "open", "confidence": "high", "evidence": [{ "file": "app/layout.tsx", "line": 8 }] }]
+}

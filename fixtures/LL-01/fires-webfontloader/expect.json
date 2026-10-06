@@ -1,0 +1,5 @@
+{
+  "description": "webfontloader with a google config: fetches from Google with no Google host in the source",
+  "mode": "static",
+  "expect": [{ "status": "open", "confidence": "high", "evidence": [{ "file": "src/fonts.ts", "line": 4 }] }]
+}

@@ -1,0 +1,7 @@
+{
+  "description": "Live page whose own stylesheet @imports Google Fonts: the request is made by the stylesheet, not the HTML",
+  "mode": "runtime",
+  "expect": [
+    { "status": "open", "confidence": "high", "evidence": [{ "requestUrl": "https://fonts.googleapis.com/css2?family=Lato&display=swap" }] }
+  ]
+}

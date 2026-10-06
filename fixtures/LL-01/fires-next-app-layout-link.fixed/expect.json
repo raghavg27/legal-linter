@@ -1,0 +1,1 @@
+{ "description": "fires-next-app-layout-link after the fix guidance: next/font/google in layout.tsx", "mode": "static", "expect": [] }

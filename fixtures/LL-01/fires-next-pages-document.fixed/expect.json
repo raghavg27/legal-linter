@@ -1,0 +1,1 @@
+{ "description": "fires-next-pages-document after the fix guidance: next/font/google in _app.tsx, links removed", "mode": "static", "expect": [] }

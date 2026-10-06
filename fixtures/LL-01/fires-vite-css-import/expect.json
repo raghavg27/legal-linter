@@ -1,0 +1,5 @@
+{
+  "description": "Vite + React: CSS @import of Google Fonts in the global stylesheet",
+  "mode": "static",
+  "expect": [{ "status": "open", "confidence": "high", "evidence": [{ "file": "src/index.css", "line": 1 }] }]
+}

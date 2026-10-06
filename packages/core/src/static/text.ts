@@ -21,7 +21,7 @@ export function stripHtmlComments(text: string): string {
  */
 export function stripCssComments(text: string, lineComments = false): string {
   const pattern = lineComments
-    ? /"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|\/\*[\s\S]*?(?:\*\/|$)|(?<![:\w])\/\/[^\n]*/g
+    ? /"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|\/\*[\s\S]*?(?:\*\/|$)|(?<![:\w(])\/\/[^\n]*/g
     : /"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'|\/\*[\s\S]*?(?:\*\/|$)/g;
   let out = text;
   for (const m of text.matchAll(pattern)) {

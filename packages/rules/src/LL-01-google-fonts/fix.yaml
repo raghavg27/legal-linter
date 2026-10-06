@@ -1,0 +1,81 @@
+# Fix guidance for a coding agent. Every step says why, so the agent can adapt
+# when the repo does not match the expected shape.
+ruleId: LL-01
+fixType: full
+goal: >-
+  Serve every font from the site's own domain, so that no visitor's browser
+  contacts fonts.googleapis.com or fonts.gstatic.com when a page loads. The
+  fonts can stay the same; only where they are downloaded from changes.
+
+steps:
+  - title: List the fonts currently loaded from Google
+    why: >-
+      The replacement must load the same families and weights, or the site's
+      look changes and the owner rejects the fix.
+    instructions: >-
+      Open each location in the finding. Read the family names and weights from
+      the Google URL (for example `family=Inter:wght@400;700` means Inter at 400
+      and 700). For webfontloader, read the `google.families` list.
+
+  - title: Self-host the same fonts
+    why: >-
+      Self-hosting means the font files are downloaded at build time and served
+      from the site's own domain, so the visitor's IP address never reaches Google.
+    instructions: >-
+      Use the framework's built-in self-hosting if it has one; otherwise install
+      the matching @fontsource package for each family and import it once from
+      the app's entry point.
+    variants:
+      next-app: >-
+        In app/layout.tsx, import the family from `next/font/google`
+        (for example `import { Inter } from 'next/font/google'`), create it with
+        the needed `weight` and `subsets`, and add its `className` (or
+        `variable`) to the <html> or <body> element. next/font downloads the
+        files at build time and serves them from your domain, despite the
+        "google" in the import path.
+      next-pages: >-
+        In pages/_app.tsx (create it if missing), import the family from
+        `next/font/google`, create it with the needed `weight` and `subsets`,
+        and wrap the page in an element with its `className`, or apply its
+        `variable` in a global style. Do not load fonts in pages/_document.tsx.
+      vite-react: >-
+        Install `@fontsource/<family>` (or `@fontsource-variable/<family>` for
+        variable fonts) and import the needed weights in src/main.tsx, for
+        example `import '@fontsource/roboto/400.css'`.
+      remix: >-
+        Install `@fontsource/<family>` and import the CSS from app/root.tsx, or
+        add it to the `links` export using the package's CSS URL resolved by the
+        bundler.
+      plain-html: >-
+        Download the .woff2 files for the needed weights, put them in the site
+        (for example /fonts/), and declare them with @font-face rules whose
+        `src: url()` points at those local files.
+
+  - title: Remove every reference to the Google font hosts
+    why: >-
+      The fonts are now served locally, so the old tags only add the Google
+      request back. A preconnect to Google also opens a connection that reveals
+      the visitor's IP address, even when nothing is downloaded.
+    instructions: >-
+      Delete the `<link rel="stylesheet">`, `<link rel="preload">` and
+      `<link rel="preconnect">` tags that point at fonts.googleapis.com or
+      fonts.gstatic.com, any CSS `@import` of those hosts, any @font-face
+      `src: url()` on fonts.gstatic.com, and any webfontloader call with a
+      `google` key (uninstall webfontloader if nothing else uses it).
+
+  - title: Point font-family rules at the self-hosted font
+    why: >-
+      next/font and some @fontsource packages expose a different family name
+      or a CSS variable; if CSS still names the old family, text silently falls
+      back to a system font.
+    instructions: >-
+      Search the CSS and Tailwind config for the family names from step 1 and
+      update them to the name or CSS variable the self-hosted font provides.
+
+doneWhen:
+  - "No shipped file links to, imports from, or preconnects to fonts.googleapis.com or fonts.gstatic.com. Mentions in comments, tests and docs are fine."
+  - "The fonts listed in step 1 are loaded from the site's own domain."
+  - "A repo re-scan reports no LL-01 finding."
+  - "If a preview URL exists, a URL scan shows no requests to the two Google font hosts on first load."
+
+ownerSteps: []

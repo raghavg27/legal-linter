@@ -1,0 +1,14 @@
+# Copied word for word from RULEBOOK.md (tests/rulebook-sync.test.ts enforces this).
+# doesNotApplyIf and exposureKind are ours, written from the rulebook text; see LEGAL_REVIEW.md.
+ruleId: LL-01
+name: "Google Fonts loaded from Google's CDN"
+law: "GDPR Art. 6(1); LG München I, 3 O 17493/20 (20 Jan 2022)"
+trap: "Fonts are pulled from `fonts.googleapis.com` or `fonts.gstatic.com`, so every visitor's IP address goes to Google before any consent."
+appliesWhen: "Any site or app with EU/EEA visitors."
+doesNotApplyIf: "The site or app has no visitors from the EU or EEA."
+exposure: "€100 per claimant awarded in the Munich case, plus lawyer fees from the warning-letter wave that followed."
+exposureKind: named_case
+detectionConfidence: "High"
+sources: []
+lastReviewed: null
+reviewStatus: draft

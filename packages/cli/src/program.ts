@@ -1,16 +1,14 @@
 import { Command, CommanderError, Option } from 'commander';
-import {
-  formatText,
-  scanRepo,
-  scanSite,
-  type ScanReport,
-} from '@legal-lint/core';
+import type { Readable } from 'node:stream';
+import { formatText, intakeSchema, scanRepo, scanSite, type ScanReport } from '@legal-lint/core';
 import { rules } from '@legal-lint/rules';
+import { askIntake, writeIntake } from './init.ts';
 import pkg from '../package.json' with { type: 'json' };
 
 export const VERSION: string = pkg.version;
 
 export interface Io {
+  stdin?: Readable;
   stdout: { write(s: string): unknown; isTTY?: boolean };
   stderr: { write(s: string): unknown };
 }
@@ -77,6 +75,34 @@ function buildProgram(io: Io, setExit: (code: number) => void): Command {
         capture: { timeoutMs: opts.timeout },
       });
       setExit(output(report, Boolean(opts.json), io));
+    });
+
+  program
+    .command('init')
+    .description('Answer the project questions that decide which rules apply. Writes legal-lint.config.json.')
+    .argument('[path]', 'repository root', '.')
+    .option('--answers <json>', 'answers as JSON instead of prompts, e.g. \'{"euUkVisitors":true}\'')
+    .option('--force', 'replace existing intake answers')
+    .action(async (dir: string, opts: { answers?: string; force?: boolean }) => {
+      let intake;
+      if (opts.answers !== undefined) {
+        let json: unknown;
+        try {
+          json = JSON.parse(opts.answers);
+        } catch {
+          throw new UsageError('--answers is not valid JSON.');
+        }
+        const parsed = intakeSchema.safeParse(json);
+        if (!parsed.success) {
+          throw new UsageError(`--answers has invalid values: ${parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; ')}`);
+        }
+        intake = parsed.data;
+      } else {
+        io.stdout.write('A few questions decide which rules apply. Press Enter to skip any you are unsure of.\n\n');
+        intake = await askIntake(io.stdin ?? process.stdin, io.stdout);
+      }
+      const file = await writeIntake(dir, intake, Boolean(opts.force));
+      io.stdout.write(`\nWrote ${file}. Skipped questions stay unknown, and rules that need them will ask.\n`);
     });
 
   return program;

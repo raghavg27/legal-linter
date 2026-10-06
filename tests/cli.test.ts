@@ -1,6 +1,7 @@
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
+import { Readable } from 'node:stream';
 import { describe, expect, it } from 'vitest';
 import type { ScanReport } from '@legal-lint/core';
 import { EXIT, run } from '../packages/cli/src/program.ts';
@@ -70,5 +71,65 @@ describe('legal-lint scan-url', () => {
     const { code, stderr } = await cli('scan-url', 'file:///etc/passwd');
     expect(code).toBe(EXIT.error);
     expect(stderr).toMatch(/Only http and https/);
+  });
+});
+
+describe('legal-lint init', () => {
+  async function cliWithInput(input: string, ...argv: string[]) {
+    let stdout = '';
+    let stderr = '';
+    const code = await run(argv, {
+      stdin: Readable.from([input]),
+      stdout: { write: (s: string) => (stdout += s) },
+      stderr: { write: (s: string) => (stderr += s) },
+    });
+    return { code, stdout, stderr };
+  }
+
+  it('asks every rulebook intake question, re-asks bad answers, and keeps skipped ones unknown', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'legal-lint-init-'));
+    // countries, euUk (bad then good), audience, revenue, users, subs, mkt email, sms, uploads, dmca, health, video, apps
+    const answers = ['us, de', 'maybe', 'y', 'general', '', '', 'y', 'n', '', 'yes', '', '', '', 'n'].join('\n');
+    const { code, stdout } = await cliWithInput(answers, 'init', dir);
+    expect(code).toBe(EXIT.clean);
+    expect(stdout).toContain('please answer y or n');
+    const config = JSON.parse(await readFile(path.join(dir, 'legal-lint.config.json'), 'utf8'));
+    expect(config.intake).toEqual({
+      countries: ['US', 'DE'],
+      euUkVisitors: true,
+      audience: 'general',
+      sellsSubscriptions: true,
+      sendsMarketingEmail: false,
+      hostsPublicUploads: true,
+      shipsMobileApps: false,
+    });
+  });
+
+  it('takes --answers, refuses to overwrite without --force, and keeps stored judgments', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'legal-lint-init-'));
+    const file = path.join(dir, 'legal-lint.config.json');
+    await writeFile(file, JSON.stringify({ judgments: { 'LL-02-abc': { answer: 'marketing', contentHash: 'h', answeredAt: 't' } } }));
+    expect((await cli('init', dir, '--answers', '{"euUkVisitors":false}')).code).toBe(EXIT.clean);
+
+    const again = await cli('init', dir, '--answers', '{"euUkVisitors":true}');
+    expect(again.code).toBe(EXIT.error);
+    expect(again.stderr).toMatch(/--force/);
+
+    expect((await cli('init', dir, '--answers', '{"euUkVisitors":true}', '--force')).code).toBe(EXIT.clean);
+    const config = JSON.parse(await readFile(file, 'utf8'));
+    expect(config.intake).toEqual({ euUkVisitors: true });
+    expect(config.judgments['LL-02-abc'].answer).toBe('marketing');
+
+    const bad = await cli('init', dir, '--answers', '{"euUkVisitors":"sure"}', '--force');
+    expect(bad.code).toBe(EXIT.error);
+    expect(bad.stderr).toMatch(/euUkVisitors/);
+  });
+});
+
+describe('intake coverage', () => {
+  it('init asks about every intake field the config accepts', async () => {
+    const { INTAKE_SPECS } = await import('../packages/cli/src/init.ts');
+    const { intakeSchema } = await import('@legal-lint/core');
+    expect(INTAKE_SPECS.map((s) => s.key).sort()).toEqual(Object.keys(intakeSchema.shape).sort());
   });
 });

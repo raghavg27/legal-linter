@@ -48,3 +48,10 @@ describe('LineMap', () => {
     expect(map.snippet(1, 3)).toBe('<link href="x" />');
   });
 });
+
+describe('stripCssComments with SCSS line comments', () => {
+  it('keeps protocol-relative unquoted url(//...)', () => {
+    const src = '@import url(//fonts.googleapis.com/css2?family=Inter);';
+    expect(stripCssComments(src, true)).toBe(src);
+  });
+});

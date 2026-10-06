@@ -1,0 +1,5 @@
+{
+  "description": "HTML document written from a template string (print window) with a stylesheet <link> to Google Fonts",
+  "mode": "static",
+  "expect": [{ "status": "open", "confidence": "high", "evidence": [{ "file": "src/components/PrintTrip.tsx", "line": 8 }] }]
+}

@@ -45,10 +45,9 @@ function cssHits(css: string, base: number, lineOf: (offset: number) => number):
 
 const ATTR = /\b([a-z-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
 
-function htmlHits(text: string): Hit[] {
+/** Finds Google font loads in HTML: <link> tags and <style> blocks. `base` is the text's offset in its file. */
+function htmlHits(text: string, base: number, lineOf: (offset: number) => number): Hit[] {
   const html = stripHtmlComments(text);
-  const map = new LineMap(text);
-  const lineOf = (o: number) => map.lineOf(o);
   const hits: Hit[] = [];
 
   for (const tag of html.matchAll(/<link\b[^>]*>/gi)) {
@@ -58,8 +57,8 @@ function htmlHits(text: string): Hit[] {
     const effect = linkEffect(attrs.get('rel'));
     if (!url || !effect) continue;
     hits.push({
-      startLine: lineOf(tag.index),
-      endLine: lineOf(tag.index + tag[0].length - 1),
+      startLine: lineOf(base + tag.index),
+      endLine: lineOf(base + tag.index + tag[0].length - 1),
       strength: effect,
       observed: effect === 'load' ? `<link> loading from ${url.host}` : `<link rel="preconnect"> to ${url.host}`,
     });
@@ -68,7 +67,7 @@ function htmlHits(text: string): Hit[] {
   for (const block of html.matchAll(/(<style\b[^>]*>)([\s\S]*?)<\/style>/gi)) {
     const scss = /lang\s*=\s*["']?(scss|sass|less)/i.test(block[1]!);
     const body = stripCssComments(block[2]!, scss);
-    hits.push(...cssHits(body, block.index + block[1]!.length, lineOf));
+    hits.push(...cssHits(body, base + block.index + block[1]!.length, lineOf));
   }
   return hits;
 }
@@ -148,11 +147,22 @@ function scriptHits(sf: ts.SourceFile): Hit[] {
       return;
     }
 
-    if (!isStringish(node) || handled.has(node)) return;
+    // A template with substitutions is read whole, so a tag split by ${...} is still one tag.
+    if (ts.isTemplateExpression(node)) {
+      handled.add(node.head);
+      for (const span of node.templateSpans) handled.add(span.literal);
+    } else if (!isStringish(node) || handled.has(node)) {
+      return;
+    }
     const raw = node.getText(sf);
     const urls = findFontUrls(raw);
     if (urls.length === 0) return;
 
+    // HTML inside a string: print windows, server-rendered pages, email templates.
+    if (/<(link|style)\b/i.test(raw)) {
+      hits.push(...htmlHits(raw, node.getStart(sf), lineOf));
+      return;
+    }
     // CSS inside a string: styled-components createGlobalStyle, <style jsx global>, emotion, etc.
     if (/@import|url\(/i.test(raw)) {
       hits.push(...cssHits(stripCssComments(raw), node.getStart(sf), lineOf));
@@ -202,7 +212,8 @@ export async function detectStatic(repo: RepoIndex): Promise<RawFinding[]> {
       const sf = await repo.sourceFile(file);
       hits = sf ? scriptHits(sf) : [];
     } else if (kind === 'markup') {
-      hits = htmlHits(text);
+      const map = new LineMap(text);
+      hits = htmlHits(text, 0, (o) => map.lineOf(o));
     } else {
       const map = new LineMap(text);
       hits = cssHits(stripCssComments(text, kind === 'scss'), 0, (o) => map.lineOf(o));
@@ -225,9 +236,11 @@ export async function detectStatic(repo: RepoIndex): Promise<RawFinding[]> {
       snippet: map.snippet(h.startLine, h.endLine),
       observed: h.observed,
     }));
+    // A bare URL is weak evidence on its own; building a <link> element in the same file makes a load likely.
+    const createsLink = /createElement\(\s*['"`]link['"`]\s*\)/.test(text);
     findings.push({
       key: file,
-      confidence: strongest === 'load' ? 'high' : 'medium',
+      confidence: strongest === 'load' ? 'high' : strongest === 'preconnect' || createsLink ? 'medium' : 'low',
       evidence,
       explanation: explain(strongest),
     });

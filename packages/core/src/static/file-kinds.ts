@@ -22,6 +22,8 @@ export function isNonShippingFile(file: string): boolean {
   return (
     /(^|\/)(__tests__|__mocks__|tests?|e2e|cypress|fixtures|__fixtures__|stories)\//i.test(file) ||
     /\.(test|spec|stories|story|cy)\.[mc]?[jt]sx?$/i.test(file) ||
+    /(^|\/)tests?[-_][^/]*\.[mc]?[jt]sx?$/i.test(file) ||
+    /[-_](test|spec)\.[mc]?[jt]sx?$/i.test(file) ||
     /\.min\.(js|css)$/i.test(file)
   );
 }

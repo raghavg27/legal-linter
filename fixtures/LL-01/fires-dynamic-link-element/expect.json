@@ -1,0 +1,5 @@
+{
+  "description": "Font URL in a constant, injected with document.createElement('link'): the scan cannot follow the value, so medium confidence",
+  "mode": "static",
+  "expect": [{ "status": "open", "confidence": "medium", "evidence": [{ "file": "src/theme.ts", "line": 1 }] }]
+}

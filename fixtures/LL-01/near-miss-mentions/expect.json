@@ -1,5 +1,5 @@
 {
-  "description": "Google font hosts appear only in comments, prose, a CSP header, a dns-prefetch hint, a test and the README",
+  "description": "Google font hosts appear only in comments, prose, a CSP header, a dns-prefetch hint, test files and the README",
   "mode": "static",
   "expect": []
 }

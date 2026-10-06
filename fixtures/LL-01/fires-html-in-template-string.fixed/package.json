@@ -1,0 +1,1 @@
+{ "name": "fires-html-in-template-string", "private": true, "type": "module", "dependencies": { "react": "19.0.0", "react-dom": "19.0.0" }, "devDependencies": { "vite": "6.0.0" } }

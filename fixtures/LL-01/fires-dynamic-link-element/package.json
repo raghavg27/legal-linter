@@ -1,0 +1,1 @@
+{ "name": "fires-dynamic-link-element", "private": true, "type": "module", "dependencies": { "react": "19.0.0", "react-dom": "19.0.0" }, "devDependencies": { "vite": "6.0.0" } }

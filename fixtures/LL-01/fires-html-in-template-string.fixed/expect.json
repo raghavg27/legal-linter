@@ -1,0 +1,1 @@
+{ "description": "fires-html-in-template-string after the fix guidance: @font-face pointing at the site's own /fonts", "mode": "static", "expect": [] }

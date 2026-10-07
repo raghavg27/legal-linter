@@ -4,16 +4,25 @@ A linter for legal traps in startup codebases and live sites. Each rule is a law
 
 Legal Lint reports and guides. It never edits your code: every finding comes with fix guidance that your coding agent applies.
 
-> Status: phase 1, milestone 1. One rule (LL-01) is implemented, statically and at runtime.
+> Status: phase 1, milestone 2. Rules LL-01 to LL-05 are implemented.
+
+| Rule | Trap | Checks |
+|---|---|---|
+| LL-01 | Google Fonts loaded from Google's CDN (EU) | repo, live site |
+| LL-02 | Marketing email with no unsubscribe or postal address (US) | repo |
+| LL-03 | Session replay recording before consent (US) | repo, live site |
+| LL-04 | Subscription that renews silently (US) | repo, live site |
+| LL-05 | User uploads with no DMCA agent (US) | repo, intake |
 
 ## Usage
 
 ```sh
+legal-lint init [path]          # answer the project questions that decide which rules apply
 legal-lint scan [path]          # scan a repository on this machine
 legal-lint scan-url <url>       # load a live or preview URL and check what happens before any click
 ```
 
-Both commands accept `--json` and `--rule LL-01`. `scan-url` also takes `--timeout <ms>`.
+Both scan commands accept `--json` and `--rule LL-01`. `scan-url` also takes `--timeout <ms>`. It visits the URL plus up to four same-origin pricing or legal pages linked from it, and never clicks, types or submits anything. `init` takes `--answers '<json>'` for scripted use and `--force` to answer again.
 
 Exit codes: `0` no open findings, `1` at least one open finding, `2` the scan could not run.
 
@@ -21,13 +30,19 @@ Exit codes: `0` no open findings, `1` at least one open finding, `2` the scan co
 
 ## Project answers
 
-Some rules only apply in certain situations, for example when you have EU visitors. Put the answers in `legal-lint.config.json` at the repo root:
+Some rules only apply in certain situations, for example when you have EU visitors. `legal-lint init` asks the questions and writes `legal-lint.config.json` at the repo root:
 
 ```json
-{ "intake": { "euUkVisitors": true, "countries": ["US", "DE"] } }
+{ "intake": { "countries": ["US", "DE"], "euUkVisitors": true, "sendsMarketingEmail": true } }
 ```
 
-When an answer is missing, the finding is still shown, with status `needs_intake` and the question to answer.
+When an answer is missing, the finding is still shown, with status `needs_intake` and the question to answer. Skipped questions are never treated as "no".
+
+Some findings need judgment the scanner can't make, for example whether an email is marketing or transactional. These have status `needs_judgment`, with the question, the options and the material needed to answer. An answer is stored in the same file and applies until the material changes:
+
+```json
+{ "judgments": { "LL-02-56f31f0791": { "answer": "transactional", "contentHash": "9154502ec67e0397", "answeredAt": "2026-10-07T10:00:00Z" } } }
+```
 
 ## What leaves your machine
 
@@ -48,6 +63,7 @@ Each rule lives in `packages/rules/src/<rule>/` with two reviewable data files: 
 - `fires-*` must produce the findings listed, and each one has a `.fixed` twin that must scan clean.
 - `pass-*` and `near-miss-*` must produce nothing.
 - `intake-*` check how the rule behaves with missing or negative intake answers.
+- `judgment-*` check judgment questions, unanswered and answered.
 
 ---
 

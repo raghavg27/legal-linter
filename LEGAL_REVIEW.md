@@ -16,8 +16,35 @@ Items for the lawyer. The rulebook's figures and dates are copied as written and
 - **Preconnect.** A `<link rel="preconnect">` to the Google font hosts is reported (medium confidence) even when no font is downloaded, on the reasoning that the connection itself reveals the IP. Please confirm this falls under the same risk.
 - **Explanation wording:** findings say "For EU visitors, this is the pattern behind the 2022 Munich court ruling and the wave of warning letters that followed."
 
-## Noticed while reading rules not built yet (check before milestone 2)
+## LL-02 · Marketing email
 
-- **LL-02:** "Transactional email (receipts, password resets) is exempt." As we understand it, CAN-SPAM still applies some requirements to transactional messages (for example, header information must not be misleading). Please confirm whether "exempt" is the right word in findings.
-- **LL-03:** "Applies when: Any site with California visitors." The intake asks for countries, not states, so we plan to treat "serves the US" as "has California visitors".
-- **LL-05:** The trap and the intake speak of uploads hosted *publicly*, while "Applies when" says "any product with user-generated content". Which scope should the rule use? The rulebook also says intake asks for the Copyright Office registration, but that question is missing from the intake list; we added `dmcaAgentRegistered`.
+- `doesNotApplyIf`: "The email is transactional (a receipt, password reset or account notice), or no recipients are in the US."
+- `exposureKind`: **statutory maximum** ("Up to $53,088 per email").
+- **"Exempt".** The rulebook says "Transactional email (receipts, password resets) is exempt." As we understand it, CAN-SPAM still applies some requirements to transactional messages (for example, header information must not be misleading). Please confirm whether "exempt" is the right word in findings.
+- **Judgment question wording**, put to the coding agent: "Is this email marketing (a newsletter, promotion, announcement or re-engagement message) or transactional (a receipt, password reset, or an update about the recipient's own account or order)?" Welcome and onboarding emails land here. How should they be treated?
+- **Explanation wording:** "Commercial email without an unsubscribe option, a postal address and suppression of opt-outs is the CAN-SPAM risk, with penalties counted per email."
+- **Applicability.** The rule applies when the intake says the product sends marketing email and serves the US. Should non-US companies that email some US recipients be covered as well?
+
+## LL-03 · Session replay
+
+- `doesNotApplyIf`: "The site has no visitors from California."
+- `exposureKind`: labelled **statutory maximum** for "$5,000 per violation in statutory damages". It is a fixed statutory amount rather than a cap; is "statutory maximum" an acceptable label?
+- **California visitors.** The intake asks for countries, not states, so "serves the US" is treated as "has California visitors".
+- **Explanation wording:** "Under California's Invasion of Privacy Act, recording visitors before telling them is the basis of class demand letters seeking statutory damages."
+- **Scope.** Only the five tools the rulebook names are covered.
+
+## LL-04 · Subscription renewal
+
+- `doesNotApplyIf`: "No subscriptions are sold, or none are sold to consumers in California."
+- `exposureKind`: labelled **consequence**.
+- **The rulebook's exposure line says "without compliant consent".** It is shown word for word in findings. It describes the law's effect, not the user, but please confirm it reads acceptably next to our rule never to call the user non-compliant.
+- **What counts as a disclosure** (renewal wording plus "cancel" near the pay button) and **as consent** (an unchecked checkbox with agree/consent wording). Please confirm these are the right minimum signals; the fix guidance also lists price, period and trial conversion.
+- **The fix guidance's "why" text** is ours: "Consent to the renewal terms should be its own action: an unchecked box the customer ticks..." and "Customers who signed up online should not have to email or call to stop paying."
+
+## LL-05 · DMCA agent
+
+- `doesNotApplyIf`: "Users cannot upload or post content that the product hosts."
+- `exposureKind`: **statutory maximum** (the "up to $150,000 if willful" line).
+- **Scope.** The trap and the intake speak of uploads hosted *publicly*, while "Applies when" says "any product with user-generated content". We apply the rule when the intake says uploads are hosted publicly. Which scope is right?
+- **Our explanations say** a missing, unreachable or unregistered agent "can cost the app its DMCA safe harbor for what users upload." Please confirm the wording.
+- **Fix guidance.** It lists the elements of a notice ("the work, where it appears on the site, contact details, a good-faith statement and a signature"), a counter-notice section and a repeat-infringer policy. These are written by us; please review.

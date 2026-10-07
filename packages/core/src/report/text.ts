@@ -37,7 +37,7 @@ function formatEvidence(e: Evidence, paint: Paint): string[] {
         `    ${paint(DIM, `${e.observed} · ${e.resourceType} · ${e.msSinceNavigation} ms after navigation · on ${e.pageUrl}`)}`,
       ];
     case 'absence':
-      return [`  ${e.observed}`, `    ${paint(DIM, `looked for: ${e.looked.join(', ')}`)}`];
+      return [`  ${e.observed}`, `    ${paint(DIM, `looked at: ${e.looked.join(', ')}`)}`];
   }
 }
 

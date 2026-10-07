@@ -1,87 +1,96 @@
-# Fix guidance for a coding agent. Every step says why, so the agent can adapt
-# when the repo does not match the expected shape.
+# Fix guidance for a coding agent. Each step tells why. Thus the agent can
+# change the step when the repo does not have the expected shape.
 ruleId: LL-03
 fixType: full
 goal: >-
-  Make sure the session replay tool records nothing until the visitor has been
-  told about recording and has agreed to it, and that what it records
-  afterwards has typed input masked.
+  Make sure that the session replay tool records nothing before the site tells
+  the visitor about the recording and the visitor agrees to it. After that,
+  the tool must mask the input that the visitor types.
 
 steps:
-  - title: Find where the replay tool starts
+  - title: Find the location where the replay tool starts
     why: >-
-      Recording starts when the SDK is initialised, so that call is what needs
-      a consent gate. Removing it elsewhere does not help if it still runs here.
+      The recording starts when the code initialises the SDK. Thus that call
+      must have a consent gate. If you remove the call at other locations but
+      it still runs here, the problem stays.
     instructions: >-
-      Open each location in the finding: FullStory.init, Hotjar.init or
-      hotjar.initialize, LogRocket.init, Clarity.init, posthog.init or
-      <PostHogProvider>, or a snippet script tag. Check that nothing else in the
-      repo starts the same tool.
+      Open each location in the finding. Each location is one of these:
+      FullStory.init, Hotjar.init or hotjar.initialize, LogRocket.init,
+      Clarity.init, posthog.init or <PostHogProvider>, or a snippet script tag.
+      Make sure that no other code in the repo starts the same tool.
 
   - title: Start the tool only after consent
     why: >-
-      Recording that starts before the visitor is told is the trap. Code that
-      runs on page load must not start it; only an explicit "accept" may.
+      The trap is a recording that starts before the site tells the visitor.
+      Code that runs when the page loads must not start the tool. Only an
+      explicit "accept" can start it.
     instructions: >-
       Move the initialisation into the callback that runs when the visitor
-      accepts analytics or recording in the cookie banner, and run it on later
-      page loads only when the stored consent says yes. If the project has no
-      banner, add a small one that stores the choice (for example in
-      localStorage or a cookie) and calls an `initReplay()` function on accept.
-      Keep the init call inside a condition or callback whose name makes the
-      consent check obvious, such as `if (hasConsent('analytics'))` or
+      accepts analytics or recording in the cookie banner. On subsequent page
+      loads, run it only when the stored consent is yes. If the project has no
+      banner, add a small banner. The banner keeps the choice, for example in
+      localStorage or a cookie. On accept, it calls an `initReplay()` function.
+      Put the init call in a condition or callback with a name that clearly
+      shows the consent check. Examples are `if (hasConsent('analytics'))` and
       `onConsent(...)`.
     variants:
       next-app: >-
-        Initialise in a 'use client' component rendered from app/layout.tsx,
-        inside a useEffect that returns early unless consent is granted, with
-        the consent state in its dependency list.
+        Initialise in a 'use client' component that app/layout.tsx renders. Do
+        the initialisation in a useEffect. The useEffect must return before the
+        initialisation if there is no consent. Put the consent state in its
+        dependency list.
       next-pages: >-
-        Initialise in pages/_app.tsx inside a useEffect that returns early
-        unless consent is granted, with the consent state in its dependency list.
+        Initialise in pages/_app.tsx in a useEffect. The useEffect must return
+        before the initialisation if there is no consent. Put the consent state
+        in its dependency list.
       vite-react: >-
-        Move the init out of src/main.tsx into the banner's accept handler, and
-        call it at startup only when the stored consent is yes.
+        Move the init from src/main.tsx into the accept handler of the banner.
+        At startup, call it only when the stored consent is yes.
       plain-html: >-
-        Change the snippet's script tag to type="text/plain" with your consent
-        manager's category attribute (for example data-cookieconsent="statistics"
-        for Cookiebot or data-category="analytics" for vanilla-cookieconsent),
-        so the browser does not run it until the manager enables it.
+        Change the script tag of the snippet to type="text/plain". Add the
+        category attribute of your consent manager. Examples are
+        data-cookieconsent="statistics" for Cookiebot and
+        data-category="analytics" for vanilla-cookieconsent. Thus the browser
+        does not run the script before the manager enables it.
 
-  - title: For PostHog, keep recording off until consent
+  - title: For PostHog, keep the recording off before consent
     why: >-
-      PostHog can capture analytics and recordings separately. Recording is
-      the part this rule is about.
+      PostHog can capture analytics and recordings separately. This rule is
+      about the recording.
     instructions: >-
-      Either initialise PostHog with `opt_out_capturing_by_default: true` and
-      call `posthog.opt_in_capturing()` on accept, or initialise with
-      `disable_session_recording: true` and call
+      Use one of these two methods. Method 1: initialise PostHog with
+      `opt_out_capturing_by_default: true`, and call
+      `posthog.opt_in_capturing()` on accept. Method 2: initialise with
+      `disable_session_recording: true`, and call
       `posthog.startSessionRecording()` on accept.
 
   - title: Turn on input masking
     why: >-
-      Even after consent, recording what visitors type into forms captures far
-      more than needed, including passwords and card details.
+      Also after consent, a recording of the text that visitors type into
+      forms captures too much data. This data includes passwords and card
+      details.
     instructions: >-
-      Enable the tool's input masking: PostHog `session_recording:
-      { maskAllInputs: true }`, LogRocket `dom: { inputSanitizer: true }`,
-      Clarity and Hotjar mask inputs by default (do not turn it off), FullStory
-      add the `fs-mask` class to sensitive fields or enable private-by-default.
+      Enable the input masking of the tool. For PostHog, set
+      `session_recording: { maskAllInputs: true }`. For LogRocket, set
+      `dom: { inputSanitizer: true }`. Clarity and Hotjar mask inputs by
+      default. Do not turn this off. For FullStory, add the `fs-mask` class to
+      sensitive fields, or enable private-by-default.
 
-  - title: Tell visitors about recording
+  - title: Tell visitors about the recording
     why: >-
-      The trap is recording before the visitor is told. The banner and privacy
-      policy are where they are told.
+      The trap is a recording that starts before the site tells the visitor.
+      The site tells the visitor in the banner and in the privacy policy.
     instructions: >-
       Add a line to the consent banner, such as "We record how you use this site
-      (clicks, scrolling, page changes) to improve it, only if you agree.", and
-      name the replay tool in the privacy policy's list of service providers.
+      (clicks, scrolling, page changes) to improve it, only if you agree.". In
+      the privacy policy, add the name of the replay tool to the list of
+      service providers.
 
 doneWhen:
-  - "No replay SDK is initialised on page load outside a consent callback or a consent check."
+  - "No code initialises a replay SDK when the page loads, outside a consent callback or a consent check."
   - "Input masking is on for the replay tool."
-  - "The banner and privacy policy mention session recording."
-  - "A repo re-scan reports no LL-03 finding."
-  - "If a preview URL exists, a URL scan shows no requests to replay recording endpoints on first load."
+  - "The banner and the privacy policy tell about session recording."
+  - "A repo re-scan shows no LL-03 finding."
+  - "If a preview URL exists, a URL scan shows no requests to replay recording endpoints when the page loads for the first time."
 
 ownerSteps: []

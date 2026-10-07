@@ -1,80 +1,88 @@
-# Fix guidance for a coding agent. Every step says why, so the agent can adapt
-# when the repo does not match the expected shape.
+# Fix guidance for a coding agent. Each step tells why. Thus the agent can
+# change the step when the repo does not have the expected shape.
 ruleId: LL-04
 fixType: partial
 goal: >-
-  Before paying, the customer sees the renewal terms next to the pay button
-  and ticks a separate, unchecked box agreeing to them; afterwards they get a
-  confirmation email stating the terms and can cancel online. The owner
-  confirms the exact terms.
+  Before the customer pays, the customer sees the renewal terms next to the
+  pay button. The customer also ticks a separate box that is not checked
+  before, to agree to these terms. After the payment, the customer gets a
+  confirmation email that gives the terms. The customer can cancel online.
+  The owner confirms the exact terms.
 
 steps:
-  - title: Add a renewal disclosure beside the pay button
+  - title: Add a renewal disclosure adjacent to the pay button
     why: >-
       The trap is renewal terms that are not clear next to the pay button.
-      Terms buried in the terms of service, or shown only on Stripe's hosted
-      page, are not next to the button the customer clicks in the app.
+      Terms that are only in the terms of service, or only on the hosted page
+      of Stripe, are not next to the button that the customer clicks in the
+      app.
     instructions: >-
-      Directly above or below each subscribe, upgrade or checkout button, add
-      a short block in readable type, for example: "Renews automatically every
-      month at $29 until you cancel. Cancel anytime in Settings → Billing."
-      Include the price, the billing period, that it continues until
-      cancelled, how to cancel, and what happens when a free trial ends. Use
-      placeholders the owner confirms if the real terms are not in the code.
+      Immediately above or below each subscribe, upgrade or checkout button,
+      add a short block of text that is easy to read. For example: "Renews
+      automatically every month at $29 until you cancel. Cancel anytime in
+      Settings → Billing." The block must give the price and the billing
+      period. It must also tell that the subscription continues until the
+      customer cancels, how to cancel, and what occurs when a free trial ends.
+      If the real terms are not in the code, use placeholders that the owner
+      confirms.
     variants:
       next-app: Put the block in the pricing or checkout component under app/, next to the button that starts checkout.
       next-pages: Put the block in the pricing or checkout component under pages/ or components/, next to the button.
       vite-react: Put the block in the Pricing or Paywall component next to the button.
-      plain-html: Put the block in the pricing page's HTML, next to the button.
+      plain-html: Put the block in the HTML of the pricing page, next to the button.
 
-  - title: Add a separate, unchecked consent checkbox
+  - title: Add a separate consent checkbox that is not checked by default
     why: >-
-      Consent to the renewal terms should be its own action: an unchecked box
-      the customer ticks, not a pre-checked one or one bundled with "I accept
-      the terms of service".
+      The consent to the renewal terms must be a separate action. The customer
+      must tick an empty box. Do not use a box that is checked before. Do not
+      use a box that also accepts the terms of service.
     instructions: >-
-      Add a checkbox, unchecked by default, labelled for example "I agree that
-      my subscription renews automatically until I cancel." Disable the pay
-      button (or block the checkout request) until it is ticked, and send the
-      consent with a timestamp to the server to store with the customer.
+      Add a checkbox that is not checked by default. An example label is "I
+      agree that my subscription renews automatically until I cancel."
+      Disable the pay button until the customer ticks the box. As an
+      alternative, block the checkout request. Send the consent and a
+      timestamp to the server. The server keeps them with the customer record.
 
   - title: Let customers cancel online
     why: >-
-      The trap includes having no way to cancel online. Customers who signed up
-      online should not have to email or call to stop paying.
+      The trap also includes no method to cancel online. Customers who signed
+      up online must not have to send an email or call to stop the payments.
     instructions: >-
-      Add a "Manage billing" or "Cancel subscription" action in account
-      settings. With Stripe, create a customer portal session
-      (`stripe.billingPortal.sessions.create`) and redirect to its URL; with
-      Paddle, use the customer portal or the subscription's cancel URL; with
-      Lemon Squeezy, link the subscription's `urls.customer_portal`; with
-      Razorpay, call `subscriptions.cancel`.
+      Add a "Manage billing" or "Cancel subscription" action in the account
+      settings. For Stripe, create a customer portal session
+      (`stripe.billingPortal.sessions.create`) and redirect to its URL. For
+      Paddle, use the customer portal or the cancel URL of the subscription.
+      For Lemon Squeezy, link to the `urls.customer_portal` of the
+      subscription. For Razorpay, call `subscriptions.cancel`.
 
-  - title: Send a confirmation email that states the terms
+  - title: Send a confirmation email that gives the terms
     why: >-
-      The customer needs a durable copy of what they agreed to, and an annual
-      reminder for yearly plans keeps renewals from being a surprise.
+      The customer must have a permanent copy of the terms that they agreed
+      to. For yearly plans, a reminder each year prevents a renewal that the
+      customer does not expect.
     instructions: >-
-      Add an email template (for example emails/subscription-confirmation.tsx)
-      that states the plan, price, billing period, that it renews until
-      cancelled, and how to cancel, and send it from the checkout-completed
-      webhook. Add a renewal reminder template for annual plans sent ahead of
-      the renewal date.
+      Add an email template, for example emails/subscription-confirmation.tsx.
+      The template gives the plan, the price and the billing period. It also
+      tells that the subscription renews until the customer cancels, and how
+      to cancel. Send the email from the checkout-completed webhook. For annual
+      plans, add a renewal reminder template. Send the reminder before the
+      renewal date.
 
 doneWhen:
-  - "Each pricing or checkout component shows text saying the subscription renews automatically until cancelled, and how to cancel."
-  - "An unchecked consent checkbox for the renewal terms gates the pay button."
+  - "Each pricing or checkout component shows text that tells that the subscription renews automatically until the customer cancels, and how to cancel."
+  - "The pay button stays disabled until the customer ticks a consent checkbox for the renewal terms. The checkbox is not checked by default."
   - "Customers can cancel online through a billing portal, a cancel route or a cancel call."
-  - "A confirmation email template states the subscription terms."
-  - "A repo re-scan reports no LL-04 finding, and a URL scan of the pricing page shows the renewal terms."
+  - "A confirmation email template gives the subscription terms."
+  - "A repo re-scan shows no LL-04 finding, and a URL scan of the pricing page shows the renewal terms."
 
 ownerSteps:
   - title: Confirm the exact renewal terms
     why: >-
-      The price, billing period, trial conversion and cancellation policy are
-      business decisions; the agent can only use placeholders or what the code
-      already says.
-  - title: Check that the confirmation email goes out in production
+      The price, the billing period, the trial conversion and the cancellation
+      policy are business decisions. The agent can only use placeholders or
+      the terms that are already in the code.
+  - title: Make sure that the confirmation email goes out in production
     why: >-
-      Sending depends on webhook and email-provider settings outside the
-      repo, such as the Stripe webhook endpoint and the sender domain.
+      The email send depends on webhook and email provider settings that are
+      not in the repo. Examples are the Stripe webhook endpoint and the sender
+      domain.

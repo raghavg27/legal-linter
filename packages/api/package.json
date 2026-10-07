@@ -1,0 +1,26 @@
+{
+  "name": "@legal-lint/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsup",
+    "start": "node dist/server.js",
+    "admin": "node dist/admin.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@google-cloud/firestore": "9.3.1",
+    "@hono/node-server": "2.1.3",
+    "hono": "4.13.13",
+    "ipaddr.js": "2.5.0",
+    "playwright": "1.63.0",
+    "zod": "4.6.5"
+  },
+  "devDependencies": {
+    "@legal-lint/core": "workspace:*",
+    "tsup": "8.5.1"
+  }
+}

@@ -110,7 +110,7 @@ async function runRules(
   const rulesRun: RuleRun[] = [];
   for (const rule of rules) {
     const applicability = rule.applies(intake);
-    const run: RuleRun = { id: rule.meta.id, applies: applicability.value, reason: applicability.reason };
+    const run: RuleRun = { id: rule.meta.id, name: rule.meta.name, applies: applicability.value, reason: applicability.reason };
     rulesRun.push(run);
     if (applicability.value === 'no') continue;
     try {

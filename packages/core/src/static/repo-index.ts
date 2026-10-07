@@ -21,6 +21,8 @@ const ALWAYS_SKIPPED_DIRS = new Set([
   'build',
   'out',
   'coverage',
+  // Legal Lint's own HTML reports, which quote the findings.
+  '.legal-lint',
 ]);
 
 const MAX_FILE_BYTES = 1_000_000;

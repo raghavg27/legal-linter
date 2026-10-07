@@ -125,6 +125,7 @@ export type FindingStatus = Finding['status'];
 
 export interface RuleRun {
   id: string;
+  name: string;
   applies: Applicability;
   reason: string;
   error?: string;

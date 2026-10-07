@@ -13,7 +13,9 @@ export {
   intakeQuestions,
   loadConfig,
 } from './intake.ts';
+export { formatHtml } from './report/html.ts';
 export { formatText } from './report/text.ts';
+export { defaultReportPath, REPORT_DIR, writeHtmlReport } from './report/write-html.ts';
 export { captureSite, pickFollowLinks, PlaywrightMissingError, userAgent, type CaptureOptions } from './runtime/crawler.ts';
 export { jsxAttributeString, lineRange, parseSource, ts, walk } from './static/ast.ts';
 export { fileKind, isNonShippingFile, type FileKind } from './static/file-kinds.ts';

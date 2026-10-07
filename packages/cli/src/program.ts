@@ -1,6 +1,6 @@
 import { Command, CommanderError, Option } from 'commander';
 import type { Readable } from 'node:stream';
-import { formatText, intakeSchema, scanRepo, scanSite, type ScanReport } from '@legal-lint/core';
+import { defaultReportPath, formatText, intakeSchema, scanRepo, scanSite, writeHtmlReport, type ScanReport } from '@legal-lint/core';
 import { rules } from '@legal-lint/rules';
 import { askIntake, writeIntake } from './init.ts';
 import pkg from '../package.json' with { type: 'json' };
@@ -26,9 +26,20 @@ function knownRuleIds(ids: string[] | undefined): string[] | undefined {
   return ids;
 }
 
-function output(report: ScanReport, json: boolean, io: Io): number {
-  if (json) io.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
+interface OutputOptions {
+  json?: boolean;
+  /** true: write to the default report path. A string: write there. */
+  html?: boolean | string;
+}
+
+async function output(report: ScanReport, opts: OutputOptions, reportDir: string, io: Io): Promise<number> {
+  if (opts.json) io.stdout.write(`${JSON.stringify(report, null, 2)}\n`);
   else io.stdout.write(`${formatText(report, { color: Boolean(io.stdout.isTTY) && !process.env.NO_COLOR })}\n`);
+  if (opts.html) {
+    const file = await writeHtmlReport(report, opts.html === true ? defaultReportPath(reportDir) : opts.html);
+    // stderr, so --json output stays parseable.
+    io.stderr.write(`HTML report: ${file}\n`);
+  }
   return report.summary.open > 0 ? EXIT.findings : EXIT.clean;
 }
 
@@ -41,6 +52,8 @@ function buildProgram(io: Io, setExit: (code: number) => void): Command {
     .addHelpText('after', '\nExit codes: 0 no open findings, 1 open findings, 2 the scan could not run.');
 
   const ruleOption = () => new Option('--rule <ids...>', 'only run these rules, e.g. --rule LL-01');
+  const htmlOption = () =>
+    new Option('--html [file]', 'also write an HTML report for the product owner (default: .legal-lint/report.html)');
 
   program
     .command('scan')
@@ -48,9 +61,10 @@ function buildProgram(io: Io, setExit: (code: number) => void): Command {
     .argument('[path]', 'repository root', '.')
     .option('--json', 'print the report as JSON')
     .addOption(ruleOption())
-    .action(async (root: string, opts: { json?: boolean; rule?: string[] }) => {
+    .addOption(htmlOption())
+    .action(async (root: string, opts: OutputOptions & { rule?: string[] }) => {
       const report = await scanRepo(root, { rules, toolVersion: VERSION, only: knownRuleIds(opts.rule) });
-      setExit(output(report, Boolean(opts.json), io));
+      setExit(await output(report, opts, root, io));
     });
 
   program
@@ -60,7 +74,8 @@ function buildProgram(io: Io, setExit: (code: number) => void): Command {
     .option('--json', 'print the report as JSON')
     .option('--timeout <ms>', 'page load timeout in milliseconds', (v) => Number.parseInt(v, 10), 30_000)
     .addOption(ruleOption())
-    .action(async (url: string, opts: { json?: boolean; rule?: string[]; timeout: number }) => {
+    .addOption(htmlOption())
+    .action(async (url: string, opts: OutputOptions & { rule?: string[]; timeout: number }) => {
       let parsed: URL;
       try {
         parsed = new URL(url);
@@ -74,7 +89,7 @@ function buildProgram(io: Io, setExit: (code: number) => void): Command {
         only: knownRuleIds(opts.rule),
         capture: { timeoutMs: opts.timeout },
       });
-      setExit(output(report, Boolean(opts.json), io));
+      setExit(await output(report, opts, process.cwd(), io));
     });
 
   program

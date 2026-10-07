@@ -1,5 +1,6 @@
 import { Hono, type Context } from 'hono';
 import { bodyLimit } from 'hono/body-limit';
+import { compress } from 'hono/compress';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { licenceRequestSchema, scanRequestSchema, type ApiErrorReason } from '@legal-lint/core/remote';
 import type { SiteCapture } from '@legal-lint/core';
@@ -57,9 +58,15 @@ export function createApp(deps: AppDeps): Hono {
     const window = reason === 'key_hour' ? 'hourly' : 'daily';
     return fail(c, 429, reason, `This key has used its ${window} hosted scans. Try later, or scan on your own machine with --local.`, retryAfterSec);
   };
+  const capped = (capture: SiteCapture): SiteCapture => ({
+    ...capture,
+    pages: capture.pages.map((p) => ({ ...p, html: p.html.slice(0, cfg.maxPageHtmlChars), text: p.text.slice(0, cfg.maxPageTextChars) })),
+  });
   const secondsUntil = (until: number, t: Date) => Math.max(1, Math.ceil((until - t.getTime()) / 1000));
 
   const app = new Hono();
+  // Captures are mostly HTML and text, which compress well; outbound traffic beyond the free allowance is billed.
+  app.use('/v1/*', compress({ encoding: 'gzip' }));
   app.use('/v1/*', bodyLimit({ maxSize: 4 * 1024, onError: (c) => fail(c, 413, 'bad_request', 'Request body too large.') }));
   app.onError((_e, c) => fail(c, 500, 'internal', 'Something went wrong on the Legal Lint server.'));
   app.get('/healthz', (c) => c.json({ ok: true }));
@@ -134,7 +141,7 @@ export function createApp(deps: AppDeps): Hono {
         try {
           const capture = await deps.scanner.scan(target.url);
           done('ok');
-          return c.json({ capture });
+          return c.json({ capture: capped(capture) });
         } catch (e) {
           done('scan_failed');
           return fail(c, 502, 'scan_failed', `Could not scan ${host}: ${(e as Error).message.split('\n')[0]}`);

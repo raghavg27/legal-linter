@@ -161,6 +161,8 @@ gcloud run services update legal-lint-api --region us-central1 --update-env-vars
 | `TRUSTED_PROXY_HOPS` | 1 | `X-Forwarded-For` entries added by Google's proxies (section 6). |
 | `PAGE_TIMEOUT_MS` | 15000 | Load timeout per page. |
 | `SCAN_BUDGET_MS` | 40000 | No new page is started after this long. |
+| `MAX_PAGE_HTML_CHARS` | 1000000 | HTML kept per page in a scan result. Longer pages are cut. |
+| `MAX_PAGE_TEXT_CHARS` | 300000 | Visible text kept per page in a scan result. |
 | `SCAN_DEADLINE_MS` | 60000 | Hard limit for one scan. A page that freezes is closed and the scan is reported as failed. |
 | `LOG_FORWARDED_FOR` | unset | `1` logs the raw `X-Forwarded-For` header. Only for section 6. |
 

@@ -12,6 +12,9 @@ export interface ApiConfig {
   budgetMs: number;
   /** Hard limit for one scan. */
   deadlineMs: number;
+  /** Per page, so one huge page cannot make a large (and billed) response. */
+  maxPageHtmlChars: number;
+  maxPageTextChars: number;
   /** Temporary, for finding the client-IP header layout after the first deploy. */
   logForwardedFor: boolean;
 }
@@ -37,6 +40,8 @@ export function readConfig(env: NodeJS.ProcessEnv): ApiConfig {
     pageTimeoutMs: int(env.PAGE_TIMEOUT_MS, 15_000),
     budgetMs: int(env.SCAN_BUDGET_MS, 40_000),
     deadlineMs: int(env.SCAN_DEADLINE_MS, 60_000),
+    maxPageHtmlChars: int(env.MAX_PAGE_HTML_CHARS, 1_000_000),
+    maxPageTextChars: int(env.MAX_PAGE_TEXT_CHARS, 300_000),
     logForwardedFor: env.LOG_FORWARDED_FOR === '1',
   };
 }

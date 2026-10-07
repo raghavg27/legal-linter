@@ -1,3 +1,4 @@
+import { gunzipSync } from 'node:zlib';
 import { describe, expect, it, vi } from 'vitest';
 import type { SiteCapture } from '@legal-lint/core';
 import { createApp, type AppDeps, type LogEntry } from './app.ts';
@@ -80,6 +81,26 @@ describe('POST /v1/scan', () => {
     expect(res.status).toBe(200);
     expect((await res.json()).capture.pages[0].text).toBe('hi');
     expect(scanned).toEqual(['https://example.com/pricing?q=secret-path']);
+  });
+
+  it('gzips the capture for clients that accept it, to keep outbound traffic small', async () => {
+    const { scan, good } = await setup();
+    const res = await scan(good.key, undefined, { 'accept-encoding': 'gzip' });
+    expect(res.status).toBe(200);
+    expect(res.headers.get('content-encoding')).toBe('gzip');
+    const body = JSON.parse(gunzipSync(Buffer.from(await res.arrayBuffer())).toString('utf8'));
+    expect(body.capture.pages[0].text).toBe('hi');
+  });
+
+  it('caps the html and text of each page', async () => {
+    const huge = (url: string): SiteCapture => ({
+      ...capture(url),
+      pages: [{ ...capture(url).pages[0]!, html: 'h'.repeat(3_000_000), text: 't'.repeat(1_000_000) }],
+    });
+    const { scan, good } = await setup({ scanner: { scan: async (url) => huge(url) } }, { MAX_PAGE_HTML_CHARS: '1000', MAX_PAGE_TEXT_CHARS: '500' });
+    const page = (await (await scan(good.key)).json()).capture.pages[0];
+    expect(page.html).toHaveLength(1000);
+    expect(page.text).toHaveLength(500);
   });
 
   it('refuses a missing, unknown, revoked or expired key with 401 before scanning', async () => {

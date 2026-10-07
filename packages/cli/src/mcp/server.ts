@@ -38,13 +38,13 @@ import { scanUrl } from '../scan-url.ts';
 
 export interface ServerOptions {
   version: string;
-  /** Crawler options for scan_url. Tests pass a shared browser and offline mode. */
+  /** Crawler options for scan_url. Tests give a shared browser and offline mode. */
   capture?: Omit<CaptureOptions, 'toolVersion'>;
-  /** Licence lookup and network access; tests pass their own. */
+  /** Licence lookup and network access. Tests give their own. */
   runtime?: RuntimeEnv;
 }
 
-/** Judgment material longer than this is cut in scan results; the agent can read the file for the rest. */
+/** Scan results cut judgment material that is longer than this. The agent can read the file for the remaining text. */
 export const MATERIAL_LIMIT = 2000;
 
 const RULE_IDS = rules.map((r) => r.meta.id) as [string, ...string[]];
@@ -87,7 +87,7 @@ function appliesHere(a: ApplicabilityResult) {
   return { value: a.value, reason: a.reason, questions: intakeQuestions(a.value === 'unknown' ? (a.missing ?? []) : []) };
 }
 
-/** Cuts long judgment material; everything else in a finding is returned in full. */
+/** Cuts long judgment material. All other parts of a finding are returned in full. */
 function forAgent(f: Finding) {
   if (f.status !== 'needs_judgment') return f;
   const material = f.judgment.material.map((m) =>
@@ -130,7 +130,7 @@ const ruleIdsParam = z.array(z.enum(RULE_IDS)).optional().describe('Only run the
 export function createServer(opts: ServerOptions): McpServer {
   const server = new McpServer({ name: 'legal-lint', version: opts.version }, { instructions: INSTRUCTIONS });
   const rt = opts.runtime ?? defaultRuntime();
-  // No free tier: every tool checks the licence first (cached, so this is a file read, not a network call).
+  // No free tier: each tool checks the licence first (from the cache. Thus this is a file read, not a network call).
   const requireLicence = async (): Promise<Licence> => {
     const licence = await checkLicence(rt, opts.version);
     if (licence.warning) process.stderr.write(`legal-lint mcp: ${licence.warning}\n`);
@@ -316,7 +316,7 @@ export function createServer(opts: ServerOptions): McpServer {
       await requireLicence();
       const dir = await projectDir(p);
       const ruleId = FINDING_ID.exec(findingId)![1]!;
-      // Scan again without stored answers, so the question and the material are current.
+      // Scan again without stored answers. Thus the question and the material are current.
       const fresh = await scanRepo(dir, { rules, toolVersion: opts.version, only: [ruleId], judgments: {} });
       const finding = fresh.findings.find((f) => f.id === findingId);
       if (!finding) throw new Error(`No finding ${findingId} in a fresh scan of ${dir}. It may have been fixed or moved; call scan_repo again.`);

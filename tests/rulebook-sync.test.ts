@@ -4,8 +4,8 @@ import { describe, expect, it } from 'vitest';
 import { rules } from '@legal-lint/rules';
 import { bannedWording } from './helpers/wording.ts';
 
-// legal.yaml and rule metadata must match RULEBOOK.md word for word, so the
-// lawyer reviews one document and the shipped text cannot drift from it.
+// legal.yaml and the rule metadata must be the same as RULEBOOK.md, word for word. Thus the
+// lawyer reviews one document, and the shipped text cannot become different from it.
 
 interface RulebookEntry {
   name: string;

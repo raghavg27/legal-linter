@@ -1,5 +1,5 @@
-// Comment stripping that keeps every character offset and line number intact:
-// commented-out code is replaced with spaces, newlines are kept.
+// Removes comments, but does not change character offsets and line numbers:
+// spaces replace the commented-out code, and the newlines stay.
 
 function blank(text: string, start: number, end: number): string {
   return text.slice(0, start) + text.slice(start, end).replace(/[^\n]/g, ' ') + text.slice(end);
@@ -17,7 +17,7 @@ export function stripHtmlComments(text: string): string {
 
 /**
  * Removes CSS block comments, and `//` line comments for SCSS/Less.
- * Quoted strings are skipped so `url("//host/x")` is not mistaken for a comment.
+ * The function skips quoted strings. Thus it does not think that `url("//host/x")` is a comment.
  */
 export function stripCssComments(text: string, lineComments = false): string {
   const pattern = lineComments
@@ -38,7 +38,7 @@ export class LineMap {
     for (let i = 0; i < text.length; i++) if (text[i] === '\n') this.starts.push(i + 1);
   }
 
-  /** 1-based line number of a character offset. */
+  /** The line number of a character offset. The first line is 1. */
   lineOf(offset: number): number {
     let lo = 0;
     let hi = this.starts.length - 1;
@@ -50,7 +50,7 @@ export class LineMap {
     return lo + 1;
   }
 
-  /** Source lines startLine..endLine, trimmed and capped for display. */
+  /** Source lines startLine..endLine, trimmed and cut to a maximum length for display. */
   snippet(startLine: number, endLine: number, max = 240): string {
     const from = this.starts[startLine - 1] ?? 0;
     const to = this.starts[endLine] ?? this.text.length;

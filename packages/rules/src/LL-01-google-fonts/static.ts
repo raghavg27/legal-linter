@@ -14,7 +14,7 @@ import {
 } from '@legal-lint/core';
 import { findFontUrls, isFontAssetUrl, linkEffect, type FontUrl } from './hosts.ts';
 
-/** load: the browser fetches from Google. preconnect: it opens a connection only. reference: a URL whose use we can't see. */
+/** load: the browser gets data from Google. preconnect: it only opens a connection. reference: a URL, but we cannot see how the code uses it. */
 type Strength = 'load' | 'preconnect' | 'reference';
 
 interface Hit {
@@ -26,7 +26,7 @@ interface Hit {
 
 const STATEMENT_START = /[;{}]/;
 
-/** Finds Google font URLs used by CSS @import or url() in already comment-free CSS. */
+/** Finds Google font URLs that CSS @import or url() uses, in CSS that has no comments. */
 function cssHits(css: string, base: number, lineOf: (offset: number) => number): Hit[] {
   const hits: Hit[] = [];
   for (const url of findFontUrls(css)) {
@@ -45,7 +45,7 @@ function cssHits(css: string, base: number, lineOf: (offset: number) => number):
 
 const ATTR = /\b([a-z-]+)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s>]+))/gi;
 
-/** Finds Google font loads in HTML: <link> tags and <style> blocks. `base` is the text's offset in its file. */
+/** Finds Google font loads in HTML: <link> tags and <style> blocks. `base` is the offset of the text in its file. */
 function htmlHits(text: string, base: number, lineOf: (offset: number) => number): Hit[] {
   const html = stripHtmlComments(text);
   const hits: Hit[] = [];
@@ -82,7 +82,7 @@ function isStringish(node: ts.Node): node is ts.StringLiteral | ts.NoSubstitutio
   );
 }
 
-/** Local names bound to the webfontloader module, plus the conventional global. */
+/** Local names for the webfontloader module, and the usual global name. */
 function webFontNames(sf: ts.SourceFile): Set<string> {
   const names = new Set(['WebFont']);
   walk(sf, (node) => {
@@ -130,7 +130,7 @@ function scriptHits(sf: ts.SourceFile): Hit[] {
       return;
     }
 
-    // WebFont.load({ google: { families: [...] } }) fetches from Google without the host in the source.
+    // WebFont.load({ google: { families: [...] } }) gets fonts from Google, but the host is not in the source.
     if (
       ts.isCallExpression(node) &&
       ts.isPropertyAccessExpression(node.expression) &&
@@ -147,7 +147,7 @@ function scriptHits(sf: ts.SourceFile): Hit[] {
       return;
     }
 
-    // A template with substitutions is read whole, so a tag split by ${...} is still one tag.
+    // The code reads a template with substitutions as one text. Thus a tag that ${...} divides is still one tag.
     if (ts.isTemplateExpression(node)) {
       handled.add(node.head);
       for (const span of node.templateSpans) handled.add(span.literal);
@@ -158,12 +158,12 @@ function scriptHits(sf: ts.SourceFile): Hit[] {
     const urls = findFontUrls(raw);
     if (urls.length === 0) return;
 
-    // HTML inside a string: print windows, server-rendered pages, email templates.
+    // HTML in a string: print windows, pages that the server renders, email templates.
     if (/<(link|style)\b/i.test(raw)) {
       hits.push(...htmlHits(raw, node.getStart(sf), lineOf));
       return;
     }
-    // CSS inside a string: styled-components createGlobalStyle, <style jsx global>, emotion, etc.
+    // CSS in a string: styled-components createGlobalStyle, <style jsx global>, emotion, and others.
     if (/@import|url\(/i.test(raw)) {
       hits.push(...cssHits(stripCssComments(raw), node.getStart(sf), lineOf));
       return;
@@ -236,7 +236,7 @@ export async function detectStatic(repo: RepoIndex): Promise<RawFinding[]> {
       snippet: map.snippet(h.startLine, h.endLine),
       observed: h.observed,
     }));
-    // A bare URL is weak evidence on its own; building a <link> element in the same file makes a load likely.
+    // A URL alone is weak evidence. If the same file also builds a <link> element, a load is probable.
     const createsLink = /createElement\(\s*['"`]link['"`]\s*\)/.test(text);
     findings.push({
       key: file,

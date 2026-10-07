@@ -1,8 +1,8 @@
 import { z } from 'zod';
 import type { SiteCapture } from './types.ts';
 
-// What travels between the CLI and the hosted API. The request schemas are
-// strict, so nothing beyond the key, the version and the URL can be added by accident.
+// The data that goes between the CLI and the hosted API. The request schemas are
+// strict. Thus nothing other than the key, the version and the URL can be added by accident.
 
 export const siteCaptureSchema: z.ZodType<SiteCapture> = z.object({
   startUrl: z.string(),

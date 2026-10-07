@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
-// Data files a non-programmer can review (legal.yaml, fix.yaml) and the
-// per-project config are validated against these schemas at load time.
+// These schemas validate, at load time, the data files that a person who is not a
+// programmer can review (legal.yaml, fix.yaml) and the config of each project.
 
 export const FRAMEWORKS = [
   'next-app',
@@ -21,7 +21,7 @@ export const legalTextSchema = z
     law: z.string().min(1),
     trap: z.string().min(1),
     appliesWhen: z.string().min(1),
-    // Written by us from appliesWhen, not copied from the rulebook. Listed in LEGAL_REVIEW.md.
+    // We wrote this from appliesWhen. It is not a copy of the rulebook. It is in LEGAL_REVIEW.md.
     doesNotApplyIf: z.string().min(1),
     exposure: z.string().min(1),
     exposureKind: z.enum(['statutory_max', 'named_case', 'consequence']),
@@ -52,7 +52,7 @@ export const fixGuidanceSchema = z
   })
   .strict();
 
-// Every field is optional: an unanswered question means "unknown", never "no".
+// Each field is optional: a question without an answer means "unknown", never "no".
 export const intakeSchema = z
   .object({
     countries: z.array(z.string().length(2).toUpperCase()).optional(),
@@ -80,13 +80,13 @@ export const configSchema = z.object({
         answer: z.string(),
         contentHash: z.string(),
         answeredAt: z.string(),
-        // Who answered (for example "agent") and why, so a reviewer can check the call later.
+        // The answer source (for example "agent") and the reason. Thus a reviewer can examine the decision later.
         answeredBy: z.string().optional(),
         reason: z.string().optional(),
       }),
     )
     .optional(),
-  // The config is committed, so a key here would leak. Refused with directions instead.
+  // The config is committed. Thus a key here would become public. The schema refuses it and tells the user what to do.
   licenceKey: z
     .never({
       error: 'Remove licenceKey: this file is committed, so the key would leak. Set LEGAL_LINT_KEY or run `legal-lint activate <key>` instead.',

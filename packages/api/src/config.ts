@@ -6,16 +6,16 @@ export interface ApiConfig {
   failedAuthPerIpHour: number;
   maxRunning: number;
   maxWaiting: number;
-  /** X-Forwarded-For entries added by trusted proxies (checked after the first deploy, DEPLOY.md). */
+  /** X-Forwarded-For entries that trusted proxies add (examine this after the first deploy, DEPLOY.md). */
   trustedHops: number;
   pageTimeoutMs: number;
   budgetMs: number;
   /** Hard limit for one scan. */
   deadlineMs: number;
-  /** Per page, so one huge page cannot make a large (and billed) response. */
+  /** For each page. Thus one very large page cannot make a large response that costs money. */
   maxPageHtmlChars: number;
   maxPageTextChars: number;
-  /** Temporary, for finding the client-IP header layout after the first deploy. */
+  /** Temporary. Use it to find the layout of the client IP header after the first deploy. */
   logForwardedFor: boolean;
 }
 
@@ -24,7 +24,7 @@ function int(value: string | undefined, fallback: number): number {
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
 
-/** Defaults keep a month of worst-case scans at half the Cloud Run free quota (see the spec). */
+/** With the defaults, a month of worst-case scans uses half of the free quota of Cloud Run (see the spec). */
 export function readConfig(env: NodeJS.ProcessEnv): ApiConfig {
   return {
     limits: {

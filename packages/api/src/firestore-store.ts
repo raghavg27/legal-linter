@@ -2,7 +2,7 @@ import type { Firestore } from '@google-cloud/firestore';
 import type { KeyRecord } from './keys.ts';
 import { decide, usageDocIds, type KeyStore, type Reservation, type ScanLimits, type UsageStore } from './store.ts';
 
-/** Keys in `keys/{sha256}`; usage counters in `usage/{keyHash}_{window}` and `usage/month_{yyyy-mm}`. */
+/** Keys in `keys/{sha256}`. Usage counters in `usage/{keyHash}_{window}` and `usage/month_{yyyy-mm}`. */
 export class FirestoreStore implements KeyStore, UsageStore {
   constructor(private readonly db: Firestore) {}
 
@@ -31,7 +31,7 @@ export class FirestoreStore implements KeyStore, UsageStore {
     return live.length;
   }
 
-  /** One transaction: three reads, then three writes only if every limit allows. */
+  /** One transaction: three reads, then three writes only if each limit permits them. */
   async reserveScan(keyHash: string, now: Date, limits: ScanLimits): Promise<Reservation> {
     const ids = usageDocIds(keyHash, now);
     const usage = this.db.collection('usage');

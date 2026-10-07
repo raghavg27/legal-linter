@@ -29,7 +29,7 @@ export interface EmailSend {
   startLine: number;
   endLine: number;
   snippet: string;
-  /** Source of the send call, capped, for judgment material. */
+  /** The source of the send call, cut to a maximum length, for the judgment material. */
   callText: string;
   subject?: string;
   body: EmailBody;
@@ -37,7 +37,7 @@ export interface EmailSend {
   managedUnsubscribe: boolean;
   /** Sent to a list: Resend broadcasts/audiences, or a loop over subscribers/contacts. */
   toList: boolean;
-  /** Name of the enclosing function, for classification. */
+  /** The name of the function that contains the call, for the classification. */
   functionName?: string;
 }
 
@@ -100,7 +100,7 @@ function unwrap(expr: ts.Expression | undefined): ts.Expression | undefined {
   return e;
 }
 
-/** Follows an identifier to its initializer in the same file, a couple of hops at most. */
+/** Follows an identifier to its initializer in the same file, through a maximum of a few steps. */
 function resolveLocal(expr: ts.Expression | undefined, sf: ts.SourceFile, depth = 2): ts.Expression | undefined {
   const e = unwrap(expr);
   if (!e || !ts.isIdentifier(e) || depth === 0) return e;
@@ -111,7 +111,7 @@ function resolveLocal(expr: ts.Expression | undefined, sf: ts.SourceFile, depth 
   return found ? resolveLocal(found, sf, depth - 1) : e;
 }
 
-/** Depth-first search for a property by name (case-insensitive) in nested object literals. */
+/** Depth-first search for a property by name (not case-sensitive) in nested object literals. */
 function findProp(obj: ts.Expression | undefined, names: string[], depth = 4): ts.Expression | undefined {
   if (!obj || !ts.isObjectLiteralExpression(obj) || depth === 0) return undefined;
   const wanted = names.map((n) => n.toLowerCase());
@@ -138,7 +138,7 @@ function literalText(expr: ts.Expression | undefined, sf: ts.SourceFile): string
   return undefined;
 }
 
-/** Component name rendered by an expression: <X />, X(props), render(<X />), await render(X()). */
+/** The name of the component that an expression renders: <X />, X(props), render(<X />), await render(X()). */
 function componentName(expr: ts.Expression | undefined, sf: ts.SourceFile, depth = 3): string | undefined {
   const e = resolveLocal(expr, sf);
   if (!e || depth === 0) return undefined;
@@ -188,7 +188,7 @@ function enclosingFunctionName(node: ts.Node): string | undefined {
 
 const EXTENSIONS = ['', '.tsx', '.ts', '.jsx', '.js', '.mdx', '/index.tsx', '/index.ts', '/index.jsx', '/index.js'];
 
-/** Resolves an import specifier to a repo file: relative paths, and the common "@/" and "~/" aliases. */
+/** Resolves an import specifier to a repo file: relative paths, and the usual "@/" and "~/" aliases. */
 export function resolveImport(repo: RepoIndex, fromFile: string, specifier: string): string | undefined {
   const files = new Set(repo.files);
   const bases: string[] = [];
@@ -248,13 +248,13 @@ export async function findEmailSends(repo: RepoIndex): Promise<EmailSend[]> {
 
 export interface TemplateContent {
   files: string[];
-  /** Raw source, for links and placeholders. */
+  /** The raw source, for links and placeholders. */
   raw: string;
-  /** What the reader sees. */
+  /** The text that the reader sees. */
   text: string;
 }
 
-/** The email's content, following the template component and the components it renders one level deep. */
+/** The content of the email. It includes the template component and the components that it renders, one level deep. */
 export async function templateContent(repo: RepoIndex, send: EmailSend): Promise<TemplateContent | null> {
   if (send.body.kind === 'inline') return { files: [], raw: send.body.content, text: markupText(send.body.content) };
   if (send.body.kind !== 'component' || !send.body.file) return null;

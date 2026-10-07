@@ -3,7 +3,7 @@ import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 
-/** Everything the licence code touches from the outside world, so tests can replace it. */
+/** All the external items that the licence code uses. Thus tests can replace them. */
 export interface RuntimeEnv {
   env: NodeJS.ProcessEnv;
   fetch: typeof fetch;
@@ -11,7 +11,7 @@ export interface RuntimeEnv {
 }
 
 export function defaultRuntime(): RuntimeEnv {
-  // fetch is looked up per call, so tests that spy on globalThis.fetch see every request.
+  // The code gets fetch for each call. Thus tests that spy on globalThis.fetch see each request.
   return { env: process.env, fetch: (...args) => globalThis.fetch(...args), now: () => new Date() };
 }
 
@@ -57,7 +57,7 @@ export interface LicenceCache {
 
 const cacheFile = (env: NodeJS.ProcessEnv) => path.join(homeDir(env), 'licence.json');
 
-/** The cache for this key, or null when there is none, it is for another key, or it is unreadable. */
+/** The cache for this key. null when there is no cache, when it is for a different key, or when the code cannot read it. */
 export async function readCache(env: NodeJS.ProcessEnv, key: string): Promise<LicenceCache | null> {
   try {
     const cache = JSON.parse(await readFile(cacheFile(env), 'utf8')) as LicenceCache;

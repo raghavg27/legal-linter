@@ -1,4 +1,4 @@
-/** In memory, which is correct because the service runs as a single instance. */
+/** In memory. This is correct because the service runs as one instance. */
 export class FixedWindowLimiter {
   private readonly hits = new Map<string, { window: number; count: number }>();
 
@@ -17,7 +17,7 @@ export class FixedWindowLimiter {
     return { ok: false, retryAfterSec: Math.max(1, Math.ceil(((window + 1) * this.windowMs - now.getTime()) / 1000)) };
   }
 
-  /** True when this id has used up the current window. Does not count a hit. */
+  /** True when this id has used all of the current window. Does not count a hit. */
   blocked(id: string, now: Date): boolean {
     const current = this.hits.get(id);
     return current?.window === Math.floor(now.getTime() / this.windowMs) && current.count >= this.limit;
@@ -30,7 +30,7 @@ export class FixedWindowLimiter {
 
 export class BusyError extends Error {}
 
-/** At most maxRunning jobs at once and maxWaiting in line; anything more is refused at once. */
+/** A maximum of maxRunning jobs at the same time and maxWaiting in the queue. The queue refuses more jobs immediately. */
 export class ScanQueue {
   private running = 0;
   private readonly waiting: (() => void)[] = [];
@@ -45,7 +45,7 @@ export class ScanQueue {
       this.running++;
     } else {
       if (this.waiting.length >= this.maxWaiting) throw new BusyError('All scan slots are busy.');
-      // The finishing job hands its slot over, so `running` stays the same.
+      // The job that ends gives its position to the next job. Thus `running` does not change.
       await new Promise<void>((resolve) => this.waiting.push(resolve));
     }
     try {
@@ -59,8 +59,9 @@ export class ScanQueue {
 }
 
 /**
- * The client address from X-Forwarded-For. Proxies append, clients can only
- * prepend, so count `trustedHops` entries from the right.
+ * The client address from X-Forwarded-For. Proxies add entries at the end.
+ * Clients can add entries only at the start. Thus count `trustedHops` entries
+ * from the right.
  */
 export function clientIp(forwardedFor: string | undefined, trustedHops: number): string {
   const parts = (forwardedFor ?? '').split(',').map((s) => s.trim()).filter(Boolean);

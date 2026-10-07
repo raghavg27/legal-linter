@@ -12,7 +12,7 @@ const VERSION = '0.0.0-test';
 const fixture = (rule: string, name: string) => path.join(FIXTURES_DIR, rule, name);
 const scan = (dir: string) => scanRepo(dir, { rules, toolVersion: VERSION });
 
-/** One report holding an open finding, a judgment question and an intake question. */
+/** One report with an open finding, a judgment question and an intake question. */
 async function mixedReport(): Promise<ScanReport> {
   const parts = await Promise.all([
     scan(fixture('LL-01', 'fires-next-pages-document')),
@@ -121,7 +121,7 @@ describe('HTML report', () => {
   it('uses no wording that concludes the owner is breaking the law', async () => {
     const report = await mixedReport();
     let text = textOf(formatHtml(report));
-    // Exposure lines are copied from the rulebook word for word and reviewed separately (LEGAL_REVIEW.md).
+    // The exposure lines are copies of the rulebook, word for word. They have a separate review (LEGAL_REVIEW.md).
     for (const f of report.findings) text = text.replaceAll(f.exposure.text, '');
     expect(bannedWording(text)).toBeNull();
   });
@@ -150,7 +150,7 @@ describe('legal-lint scan --html', () => {
     expect(await readFile(file, 'utf8')).toContain(`id="${report.findings[0]!.id}"`);
     expect(await readFile(path.join(dir, '.legal-lint', '.gitignore'), 'utf8')).toBe('*\n');
 
-    // The report quotes the font URL; a second scan must not report the report.
+    // The report contains the font URL. A second scan must not report the report.
     const second = JSON.parse((await cli('scan', dir, '--json')).stdout) as ScanReport;
     expect(second.findings.map((f) => f.id)).toEqual(report.findings.map((f) => f.id));
     expect(second.target.kind === 'repo' && second.target.filesScanned).toBe(report.target.kind === 'repo' && report.target.filesScanned);

@@ -5,7 +5,7 @@ import type { JudgmentRequest } from './types.ts';
 
 export type StoredJudgments = NonNullable<LegalLintConfig['judgments']>;
 
-/** Hash of the material a judgment was made on. A stored answer only applies while the material is unchanged. */
+/** Hash of the material of a judgment. A stored answer applies only while the material does not change. */
 export function contentHash(material: JudgmentRequest['material']): string {
   const h = createHash('sha256');
   for (const m of material) h.update(`${m.label}\0${m.file ?? ''}\0${m.content}\0`);
@@ -14,7 +14,7 @@ export function contentHash(material: JudgmentRequest['material']): string {
 
 export type StoredJudgment = StoredJudgments[string];
 
-/** Stores the answer to one judgment question in legal-lint.config.json. */
+/** Keeps the answer to one judgment question in legal-lint.config.json. */
 export function recordJudgment(dir: string, findingId: string, entry: StoredJudgment): Promise<string> {
   return updateConfigFile(dir, (raw) => ({
     ...raw,

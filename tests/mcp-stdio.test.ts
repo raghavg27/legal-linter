@@ -6,8 +6,8 @@ import { createInterface } from 'node:readline';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { FIXTURES_DIR } from './helpers/fixtures.ts';
 
-// End to end: the published binary, started the way a coding agent starts it
-// (`legal-lint mcp` in the project folder), spoken to over real stdio.
+// End to end: the published binary, started in the same way as a coding agent starts it
+// (`legal-lint mcp` in the project folder), with communication over real stdio.
 
 const REPO = path.resolve(import.meta.dirname, '..');
 const BIN = path.join(REPO, 'packages', 'cli', 'dist', 'bin.js');
@@ -64,7 +64,7 @@ describe('legal-lint mcp over stdio', () => {
         { method: 'tools/call', params: { name: 'scan_repo', arguments: {} } },
       ]);
 
-      // Every stdout line is a JSON-RPC message; a stray log line would break the host.
+      // Each stdout line is a JSON-RPC message. One unexpected log line would break the host.
       for (const line of lines) expect(JSON.parse(line).jsonrpc).toBe('2.0');
       expect(stderr).toBe('');
       expect(exitCode).toBe(0);

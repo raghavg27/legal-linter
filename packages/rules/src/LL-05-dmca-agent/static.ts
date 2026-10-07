@@ -32,9 +32,9 @@ async function readable(repo: RepoIndex, file: string): Promise<{ text: string; 
 }
 
 /**
- * A DMCA page is a page or content file whose path says dmca/copyright, or any
- * page that mentions a DMCA, copyright or designated agent. A route name alone
- * is not required: policies often live in /legal or in Markdown content.
+ * A DMCA page is a page or content file with dmca/copyright in its path. It is
+ * also a page that refers to a DMCA, copyright or designated agent. A route name
+ * is not necessary: policies are frequently in /legal or in Markdown content.
  */
 async function findDmcaPages(repo: RepoIndex): Promise<DmcaPage[]> {
   const pageFiles = new Set((await listRoutes(repo)).filter((r) => r.kind === 'page').map((r) => r.file));
@@ -54,7 +54,7 @@ const SAFE_HARBOR = "can cost the app its DMCA safe harbor for what users upload
 
 export async function detectStatic(repo: RepoIndex, ctx: DetectContext): Promise<RawFinding[]> {
   const uploads = (await findUploadHandlers(repo)).slice(0, 5);
-  // Without upload code, only the owner's own "yes" is a reason to speak; otherwise every repo would get a question.
+  // Without upload code, only a "yes" from the owner is a reason for a finding. If not, each repo would get a question.
   if (uploads.length === 0 && ctx.intake?.hostsPublicUploads !== true) return [];
   const [page] = await findDmcaPages(repo);
 
@@ -62,7 +62,7 @@ export async function detectStatic(repo: RepoIndex, ctx: DetectContext): Promise
     return [
       {
         key: 'dmca-page',
-        // The intake says uploads are hosted publicly; seeing the upload code too makes it certain.
+        // The intake says that uploads are hosted publicly. If the scan also sees the upload code, this is certain.
         confidence: uploads.length > 0 ? 'high' : 'medium',
         evidence: [
           ...uploads,

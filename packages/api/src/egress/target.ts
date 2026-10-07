@@ -7,10 +7,10 @@ export type Resolver = (hostname: string) => Promise<string[]>;
 export const systemResolve: Resolver = async (hostname) =>
   (await lookup(hostname, { all: true, verbatim: true })).map((a) => a.address);
 
-/** Decides whether the scanner may connect to an address and port. */
+/** Decides if the scanner can connect to an address and port. */
 export type TargetPolicy = (ip: string, port: number) => boolean;
 
-/** Production: public unicast addresses on the two web ports only. */
+/** Production: only public unicast addresses on the two web ports. */
 export const publicWebOnly: TargetPolicy = (ip, port) => (port === 80 || port === 443) && isPublicAddress(ip);
 
 export function bareHost(host: string): string {
@@ -18,9 +18,10 @@ export function bareHost(host: string): string {
 }
 
 /**
- * Resolves a host and returns an address to connect to only when every address
- * it resolves to is allowed. The caller must connect to that address, not the
- * name, so a second DNS answer cannot swap in an internal one.
+ * Resolves a host. Returns an address to connect to only when each address
+ * that the host resolves to is permitted. The caller must connect to that
+ * address, not to the name. Thus a second DNS answer cannot put an internal
+ * address in its place.
  */
 export async function vetHost(
   host: string,
@@ -49,7 +50,7 @@ function portOf(url: URL): number {
   return url.port ? Number(url.port) : url.protocol === 'https:' ? 443 : 80;
 }
 
-/** The first SSRF layer: refuses a scan request before any browser starts. */
+/** The first SSRF layer: refuses a scan request before a browser starts. */
 export async function checkTarget(raw: string, policy: TargetPolicy, resolve: Resolver): Promise<TargetCheck> {
   const bad = (message: string): TargetCheck => ({ ok: false, reason: 'bad_url', message });
   let url: URL;

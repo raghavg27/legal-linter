@@ -46,8 +46,8 @@ export function createApp(deps: AppDeps): Hono {
   const tooMany = (c: Context) => fail(c, 429, 'too_many_requests', 'Too many requests from this address. Try again later.', 3600);
   const bodyOf = async (c: Context) => c.req.json().catch(() => null);
 
-  // A key that hit its hourly or daily limit, and the monthly cap, are remembered
-  // until the window ends, so repeats are refused without store reads or a queue place.
+  // The API remembers a key that went over its hourly or daily limit, and the monthly limit,
+  // until the window ends. Thus it refuses repeated requests without store reads or a queue position.
   type LimitReason = 'key_hour' | 'key_day' | 'monthly_budget';
   const blockedKeys = new Map<string, { until: number; reason: 'key_hour' | 'key_day' }>();
   let monthBlockedUntil = 0;
@@ -65,7 +65,7 @@ export function createApp(deps: AppDeps): Hono {
   const secondsUntil = (until: number, t: Date) => Math.max(1, Math.ceil((until - t.getTime()) / 1000));
 
   const app = new Hono();
-  // Captures are mostly HTML and text, which compress well; outbound traffic beyond the free allowance is billed.
+  // Captures are mostly HTML and text, which compress well. Outbound traffic above the free allowance costs money.
   app.use('/v1/*', compress({ encoding: 'gzip' }));
   app.use('/v1/*', bodyLimit({ maxSize: 4 * 1024, onError: (c) => fail(c, 413, 'bad_request', 'Request body too large.') }));
   app.onError((_e, c) => fail(c, 500, 'internal', 'Something went wrong on the Legal Lint server.'));
@@ -128,7 +128,7 @@ export function createApp(deps: AppDeps): Hono {
 
     try {
       return await queue.run(async () => {
-        // Counted when Chromium is about to start, since that is when compute is spent.
+        // Counted when Chromium is about to start, because the compute is used from that time.
         const reservedAt = now();
         const reservation = await deps.usage.reserveScan(check.hash, reservedAt, cfg.limits);
         if (!reservation.ok) {

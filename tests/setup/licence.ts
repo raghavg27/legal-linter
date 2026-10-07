@@ -3,10 +3,10 @@ import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-// Every test runs licensed by default: a key and a fresh cache in a temporary
-// home, so the gate passes without any network call. Tests of the gate build
-// their own home. The API URL points at a port nothing listens on, so a test
-// that does reach for the network fails instead of calling a real server.
+// By default, each test runs with a licence: a key and a new cache in a temporary
+// home. Thus the gate passes without a network call. The tests of the gate make
+// their own home. The API URL points to a port where no server listens. Thus, if a test
+// tries to use the network, it fails. It does not call a real server.
 const KEY = 'll_0123456789abcdefghijklmnopqrstuv';
 const home = mkdtempSync(path.join(tmpdir(), 'legal-lint-home-'));
 writeFileSync(path.join(home, 'key'), `${KEY}\n`);

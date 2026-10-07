@@ -3,7 +3,7 @@ import path from 'node:path';
 import type { ScanReport } from '../types.ts';
 import { formatHtml } from './html.ts';
 
-/** Folder for generated reports. It ignores itself in git, so a report is never committed by accident. */
+/** Folder for generated reports. It has its own .gitignore. Thus nobody commits a report by accident. */
 export const REPORT_DIR = '.legal-lint';
 
 export function defaultReportPath(dir: string): string {

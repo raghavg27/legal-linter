@@ -9,13 +9,13 @@ export default defineConfig({
   target: 'node20',
   clean: true,
   banner: { js: '#!/usr/bin/env node' },
-  // core and rules are bundled in, so the published package is self-contained.
+  // core and rules are in the bundle. Thus the published package does not need other workspace packages.
   noExternal: [/^@legal-lint\//],
-  // Optional: only needed for URL scans, loaded with a dynamic import.
+  // Optional: only URL scans need it. It loads with a dynamic import.
   external: ['playwright'],
   esbuildPlugins: [
     {
-      // Rule data files are imported as `./legal.yaml?raw`; inline them as strings.
+      // Rule data files are imported as `./legal.yaml?raw`. Put them in the bundle as strings.
       name: 'raw-text',
       setup(build) {
         build.onResolve({ filter: /\?raw$/ }, (args) => ({

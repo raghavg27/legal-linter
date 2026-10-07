@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 import { matchTopics } from '@legal-lint/core';
 import { rules } from '@legal-lint/rules';
 
-// What a coding agent might say it is about to build, and the rules that should come up.
-// Near misses contain a topic word but are about something else; they must stay quiet.
+// Text that a coding agent can give for the work that it will start, and the rules that the result must include.
+// Near misses contain a topic word but are about a different subject. They must give no rule.
 const CASES: { building: string; rules: string[] }[] = [
   { building: 'Stripe subscriptions', rules: ['LL-04'] },
   { building: 'add Stripe', rules: ['LL-04'] },

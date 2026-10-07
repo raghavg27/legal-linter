@@ -19,7 +19,7 @@ import {
 import { findEmailSends, templateContent } from '../shared/email.ts';
 import { ARL_RISK, GAP, PHRASE, hasRenewalDisclosure } from './signals.ts';
 
-// ---------- where subscriptions are created ----------
+// ---------- where the code creates subscriptions ----------
 
 type Provider = 'Stripe' | 'Paddle' | 'Lemon Squeezy' | 'Razorpay';
 
@@ -34,7 +34,7 @@ function resolveLocal(expr: ts.Expression | undefined, sf: ts.SourceFile): ts.Ex
   return found ?? expr;
 }
 
-/** Stripe Checkout defaults to one-time payment; only mode "subscription" (possibly in a ternary) is a subscription. */
+/** The default of Stripe Checkout is a one-time payment. Only mode "subscription" (possibly in a ternary) is a subscription. */
 function isSubscriptionMode(arg: ts.Expression | undefined, sf: ts.SourceFile): boolean {
   const mode = objectProp(resolveLocal(arg, sf), 'mode');
   return !!mode && /['"`]subscription['"`]/.test(mode.getText(sf));
@@ -125,7 +125,7 @@ async function checkoutUi(repo: RepoIndex): Promise<UiFile[]> {
 
 const CANCEL_CODE =
   /billingPortal\.sessions\.create|\.subscriptions\.(cancel|del)\s*\(|cancel_at_period_end\s*:\s*true|customer_portal|cancelSubscription\s*\(|management_urls|customerPortalSessions/;
-// Not plain "cancel": /checkout/cancel is where abandoned checkouts land, not a way to end a subscription.
+// Not plain "cancel": /checkout/cancel is the page for checkouts that the customer stops. It does not end a subscription.
 const CANCEL_ROUTE = /cancel[-_]?subscription|subscriptions?\/cancel|billing[-_/]?portal|customer[-_]?portal|manage[-_]?subscription/i;
 const EMAIL_PATH = /(^|\/)(emails?|mail(ers?)?|templates?)\/|(email|mail)[^/]*$/i;
 const TERMS_IN_EMAIL = (t: string) => /(subscription|subscribed|your plan|membership)/i.test(t) && /(renew|cancel)/i.test(t);
@@ -166,7 +166,7 @@ export async function detectStatic(repo: RepoIndex): Promise<RawFinding[]> {
 
   const gaps: string[] = [];
   const ui = await checkoutUi(repo);
-  // Without checkout UI in the repo (for example a hosted checkout link), the disclosure and checkbox cannot be judged here.
+  // If the checkout UI is not in the repo (for example, a link to a hosted checkout), this code cannot examine the disclosure and the checkbox.
   if (ui.length > 0) {
     if (!ui.some((u) => hasRenewalDisclosure(u.text))) gaps.push(GAP.disclosure);
     const consentBoxes = ui.filter((u) => CHECKBOX.test(u.raw) && CONSENT_LABEL.test(u.text));

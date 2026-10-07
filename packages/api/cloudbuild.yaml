@@ -1,4 +1,4 @@
-# Builds the API image from the repo root. deploy.sh passes _IMAGE.
+# Builds the API image from the repo root. deploy.sh gives _IMAGE.
 steps:
   - name: gcr.io/cloud-builders/docker
     args: ['build', '-f', 'packages/api/Dockerfile', '-t', '${_IMAGE}', '.']

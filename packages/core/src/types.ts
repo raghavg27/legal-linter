@@ -17,20 +17,20 @@ export interface RuleMeta {
   phase: 1 | 2 | 3;
   fixType: FixType;
   detection: DetectionMethod[];
-  /** Words a coding agent might use for what it is about to build. Used by the pre-flight check. */
+  /** Words that a coding agent can use for the work that it will start. The pre-flight check uses them. */
   topics: string[];
-  /** Phrases that contain a topic word but mean something else ("font size" for the fonts rule). Ignored when matching. */
+  /** Phrases that contain a topic word but have a different meaning ("font size" for the fonts rule). The matching ignores them. */
   notTopics?: string[];
 }
 
 export interface ApplicabilityResult {
   value: Applicability;
   reason: string;
-  /** Intake questions that would turn "unknown" into yes or no. */
+  /** Intake questions that would change "unknown" into yes or no. */
   missing?: (keyof Intake)[];
 }
 
-/** What a detector may read besides the repo or capture. */
+/** The data that a detector can read in addition to the repo or the capture. */
 export interface DetectContext {
   intake: Intake | null;
 }
@@ -60,7 +60,7 @@ export interface RuntimeEvidence {
   pageUrl: string;
   requestUrl: string;
   resourceType: string;
-  /** Milliseconds between the start of navigation and the request. No interaction has happened at any point. */
+  /** Milliseconds between the start of the navigation and the request. No interaction occurred at any time. */
   msSinceNavigation: number;
   observed: string;
 }
@@ -73,17 +73,17 @@ export interface AbsenceEvidence {
 
 export type Evidence = StaticEvidence | RuntimeEvidence | AbsenceEvidence;
 
-/** What a detector returns. The engine turns it into a Finding. */
+/** The result of a detector. The engine changes it into a Finding. */
 export interface RawFinding {
-  /** Stable within the rule (usually a file path or page path). Never includes a line number. */
+  /** Stable in the rule (usually a file path or page path). Never contains a line number. */
   key: string;
   confidence: Confidence;
   evidence: Evidence[];
-  /** Two sentences: what was observed, then the risk it creates. */
+  /** Two sentences: what the detector saw, then the risk that it causes. */
   explanation: string;
-  /** This finding depends on intake answers the rule-level check does not cover. */
+  /** This finding depends on intake answers that the check at rule level does not include. */
   needsIntake?: (keyof Intake)[];
-  /** The detector cannot decide alone; the host agent answers this. The engine adds the content hash. */
+  /** The detector cannot make the decision alone. The host agent answers this. The engine adds the content hash. */
   judgment?: Omit<JudgmentRequest, 'contentHash'>;
 }
 
@@ -94,7 +94,7 @@ export interface IntakeQuestion {
 
 export interface JudgmentOption {
   value: string;
-  /** open: the finding stands (at high confidence). drop: the finding is removed. */
+  /** open: the finding stays (at high confidence). drop: the finding is removed. */
   outcome: 'open' | 'drop';
   meaning: string;
 }
@@ -148,7 +148,7 @@ export interface ScanReport {
 // ---------- What detectors read ----------
 
 export interface PackageInfo {
-  /** Directory of the package.json, relative to the repo root ("" for the root). */
+  /** The directory of the package.json, relative to the repo root ("" for the root). */
   dir: string;
   name?: string;
   dependencies: Record<string, string>;
@@ -157,10 +157,10 @@ export interface PackageInfo {
 
 export interface RepoIndex {
   root: string;
-  /** POSIX paths relative to root, after .gitignore and build-output exclusions. */
+  /** POSIX paths relative to root, after the .gitignore and build-output exclusions. */
   files: readonly string[];
   read(file: string): Promise<string>;
-  /** Parsed JS/TS/JSX/TSX file, or null for any other file type. */
+  /** The parsed JS/TS/JSX/TSX file, or null for all other file types. */
   sourceFile(file: string): Promise<ts.SourceFile | null>;
   packages: readonly PackageInfo[];
   hasDependency(name: string): boolean;
@@ -192,7 +192,7 @@ export interface PageCapture {
   error?: string;
 }
 
-/** Everything recorded while visiting a site. The crawler never clicks, types or scrolls, so all of it happened before consent. */
+/** All the data that the crawler recorded on a site. The crawler never clicks, types or scrolls. Thus all of it occurred before consent. */
 export interface SiteCapture {
   startUrl: string;
   userAgent: string;

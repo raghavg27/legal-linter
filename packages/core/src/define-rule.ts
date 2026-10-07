@@ -3,9 +3,9 @@ import { fixGuidanceSchema, legalTextSchema } from './schemas.ts';
 import type { Rule } from './types.ts';
 
 export interface RuleDefinition extends Omit<Rule, 'legal' | 'fix'> {
-  /** Raw contents of the rule's legal.yaml. */
+  /** The raw contents of the legal.yaml of the rule. */
   legalYaml: string;
-  /** Raw contents of the rule's fix.yaml. */
+  /** The raw contents of the fix.yaml of the rule. */
   fixYaml: string;
 }
 
@@ -18,7 +18,7 @@ function parseData<T>(label: string, yaml: string, schema: { safeParse(v: unknow
   return result.data;
 }
 
-/** Validates a rule's data files at load time, so a broken YAML file fails loudly instead of producing odd findings. */
+/** Validates the data files of a rule at load time. Thus a YAML file with an error causes a clear failure, not incorrect findings. */
 export function defineRule(def: RuleDefinition): Rule {
   const { legalYaml, fixYaml, ...rest } = def;
   const legal = parseData(`${def.meta.id} legal.yaml`, legalYaml, legalTextSchema);

@@ -13,7 +13,7 @@ const TYPES: Record<string, string> = {
   '.png': 'image/png',
 };
 
-/** Serves a fixture's site/ folder on 127.0.0.1 with a random port, so runtime tests never touch the network. */
+/** Serves the site/ folder of a fixture on 127.0.0.1 with a random port. Thus runtime tests never connect to the network. */
 export async function serveStatic(root: string): Promise<{ url: string; close: () => Promise<void> }> {
   const server: Server = createServer(async (req, res) => {
     const urlPath = decodeURIComponent(new URL(req.url ?? '/', 'http://x').pathname);

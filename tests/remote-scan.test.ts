@@ -17,10 +17,10 @@ import { FIXTURES_DIR } from './helpers/fixtures.ts';
 import { makeHome } from './helpers/licence.ts';
 import { serveStatic } from './helpers/static-server.ts';
 
-// The real API app and scanner, in process, against a runtime fixture. The
-// fixture is reached as "fixture.test", which only the test resolver knows;
-// every other host (fonts.googleapis.com included) fails to resolve, so
-// nothing leaves the machine. The requests are still recorded by Chromium.
+// The real API app and scanner, in the process, on a runtime fixture. The
+// test connects to the fixture as "fixture.test". Only the test resolver knows this name.
+// No other host (fonts.googleapis.com also) resolves. Thus
+// no data goes out of the machine. Chromium still records the requests.
 
 const VERSION = '0.0.0-test';
 const FIXTURE = path.join(FIXTURES_DIR, 'LL-01', 'fires-runtime-link-tag');

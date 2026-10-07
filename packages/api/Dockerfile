@@ -1,4 +1,4 @@
-# Build: bundle the API together with the workspace's core code.
+# Build: bundle the API with the core code of the workspace.
 FROM node:22-bookworm-slim AS build
 WORKDIR /src
 RUN corepack enable
@@ -7,7 +7,7 @@ COPY packages ./packages
 RUN pnpm install --frozen-lockfile --filter "@legal-lint/api..."
 RUN pnpm --filter @legal-lint/api build
 
-# Run: Node, the two packages left out of the bundle, and only Chromium's headless shell (smaller image).
+# Run: Node, the two packages that are not in the bundle, and only the headless shell of Chromium (a smaller image).
 FROM node:22-bookworm-slim
 WORKDIR /app
 ENV NODE_ENV=production PLAYWRIGHT_BROWSERS_PATH=/ms-playwright

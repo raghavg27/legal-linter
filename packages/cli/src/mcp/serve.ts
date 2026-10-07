@@ -3,8 +3,8 @@ import { serveStdio, type StdioServerHandle } from '@modelcontextprotocol/server
 import { createServer, type ServerOptions } from './server.ts';
 
 /**
- * Starts the MCP server. stdout carries protocol messages only; errors go to stderr.
- * Tests pass an in-memory transport so they run the same entry point as production.
+ * Starts the MCP server. stdout contains only protocol messages. Errors go to stderr.
+ * Tests use an in-memory transport. Thus they run the same entry point as production.
  */
 export function startServer(opts: ServerOptions, transport?: Transport): StdioServerHandle {
   return serveStdio(() => createServer(opts), {

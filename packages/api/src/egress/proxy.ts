@@ -3,9 +3,9 @@ import net, { type AddressInfo } from 'node:net';
 import { bareHost, vetHost, type Resolver, type TargetPolicy } from './target.ts';
 
 export interface EgressProxy {
-  /** http://127.0.0.1:<port>, for Chromium's proxy setting. */
+  /** http://127.0.0.1:<port>, for the proxy setting of Chromium. */
   url: string;
-  /** host:port of every connection refused, for tests and logs. */
+  /** host:port of each refused connection, for tests and logs. */
   refused: string[];
   close(): Promise<void>;
 }
@@ -23,10 +23,10 @@ function hostPort(host: string, port: number): string {
 }
 
 /**
- * The second SSRF layer. Every connection Chromium makes (navigations,
- * redirects, subresources, iframes, websockets) comes through here. The proxy
- * resolves the name itself, checks every address, and connects to the address
- * it checked.
+ * The second SSRF layer. Each connection that Chromium makes (navigations,
+ * redirects, subresources, iframes, websockets) goes through this proxy. The
+ * proxy resolves the name itself, checks each address, and connects to the
+ * address that it checked.
  */
 export async function startEgressProxy(opts: { policy: TargetPolicy; resolve: Resolver }): Promise<EgressProxy> {
   const refused: string[] = [];
@@ -41,7 +41,7 @@ export async function startEgressProxy(opts: { policy: TargetPolicy; resolve: Re
     return result;
   };
 
-  // Plain http:// requests arrive with an absolute URL.
+  // Plain http:// requests come with an absolute URL.
   const server = http.createServer(async (req, res) => {
     let target: URL;
     try {
@@ -99,7 +99,7 @@ export async function startEgressProxy(opts: { policy: TargetPolicy; resolve: Re
     client.on('close', () => upstream.destroy());
   };
 
-  // https:// and wss:// (and ws:// in Chromium) arrive as CONNECT host:port.
+  // https:// and wss:// (and ws:// in Chromium) come as CONNECT host:port.
   server.on('connect', (req, client: net.Socket, head: Buffer) => {
     const authority = splitAuthority(req.url ?? '');
     if (!authority) {
@@ -112,7 +112,7 @@ export async function startEgressProxy(opts: { policy: TargetPolicy; resolve: Re
     });
   });
 
-  // ws:// sent as an absolute-URL upgrade request: replay it to the checked address.
+  // ws:// sent as an upgrade request with an absolute URL: send it again to the checked address.
   server.on('upgrade', (req, client: net.Socket, head: Buffer) => {
     let target: URL;
     try {

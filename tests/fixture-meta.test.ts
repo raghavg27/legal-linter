@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { rules } from '@legal-lint/rules';
 import { loadFixtures } from './helpers/fixtures.ts';
 
-// Tests about the fixtures themselves: a rule is only as good as the fixtures that prove it.
+// Tests about the fixtures: a rule is only as good as the fixtures that prove it.
 const fixtures = loadFixtures();
 
 describe('fixture coverage', () => {

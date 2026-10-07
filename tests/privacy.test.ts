@@ -15,8 +15,8 @@ import { run } from '../packages/cli/src/program.ts';
 import { FIXTURES_DIR } from './helpers/fixtures.ts';
 import { makeHome, TEST_KEY } from './helpers/licence.ts';
 
-// Product promise: the user's source code never leaves their machine.
-// Every outbound channel is intercepted during a repo scan; anything sent must
+// Product promise: the source code of the user never goes out of their machine.
+// During a repo scan, the test stops each outbound channel. The sent data must
 // not contain a file path or a line of file content from the scanned repo.
 
 interface Outbound {
@@ -35,7 +35,7 @@ function secretsOf(root: string): string[] {
       }
       secrets.push(path.relative(root, abs));
       for (const line of readFileSync(abs, 'utf8').split('\n')) {
-        // Short lines like "}" or "return (" would match anything.
+        // Short lines such as "}" or "return (" would match all data.
         if (line.trim().length >= 12) secrets.push(line.trim());
       }
     }
@@ -74,7 +74,7 @@ describe('privacy', () => {
     const report = await scanRepo(root, { rules, toolVersion: '0.0.0-test' });
     expect(report.findings.length).toBeGreaterThan(0);
     expect(findLeaks(outbound, secretsOf(root))).toEqual([]);
-    // The core scanner never calls home; the licence check lives in the CLI and MCP layers (tested below).
+    // The core scanner never calls the server. The licence check is in the CLI and MCP layers (tested below).
     expect(outbound).toEqual([]);
   });
 
@@ -99,7 +99,7 @@ describe('privacy', () => {
 
   async function cliScan(root: string, home: string) {
     const env = { ...process.env, LEGAL_LINT_HOME: home, LEGAL_LINT_API_URL: 'https://api.legal-lint.test' };
-    // fetch is looked up per call, so the spy above sees the licence request.
+    // The code gets fetch for each call. Thus the spy above sees the licence request.
     return run(['scan', root, '--json'], { stdout: { write: () => true }, stderr: { write: () => true } }, { env, fetch: (...a) => globalThis.fetch(...a), now: () => new Date() });
   }
 
@@ -111,7 +111,7 @@ describe('privacy', () => {
 
   it('a CLI scan with a stale cache sends exactly one licence check, carrying only the key and version', async () => {
     const root = path.join(FIXTURES_DIR, 'LL-01', 'fires-next-pages-document');
-    // Two days old: the check is attempted, blocked by this test, and the grace period lets the scan run.
+    // Two days old: the tool tries the check, this test blocks it, and the grace period lets the scan run.
     const home = await makeHome({ checkedAt: new Date(Date.now() - 2 * 86_400_000) });
     expect(await cliScan(root, home)).toBe(1);
     expect(outbound.map((o) => o.channel)).toEqual(['fetch']);

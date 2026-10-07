@@ -1,6 +1,6 @@
 import ts from 'typescript';
 
-// Small AST helpers shared by detectors.
+// Small AST helpers that the detectors share.
 
 export interface ImportBinding {
   module: string;
@@ -43,7 +43,7 @@ export function importsOf(sf: ts.SourceFile): Map<string, ImportBinding> {
   return out;
 }
 
-/** Source text of a call's callee with whitespace removed, e.g. "resend.emails.send". */
+/** The source text of the callee of a call, without whitespace, for example "resend.emails.send". */
 export function calleeText(sf: ts.SourceFile, call: ts.CallExpression | ts.NewExpression): string {
   return call.expression.getText(sf).replace(/\s+/g, '').replace(/\?\./g, '.');
 }
@@ -58,7 +58,7 @@ export function propertyName(name: ts.PropertyName | undefined): string | undefi
   return undefined;
 }
 
-/** A property's initializer in an object literal (shorthand `{ html }` returns the identifier). */
+/** The initializer of a property in an object literal (shorthand `{ html }` returns the identifier). */
 export function objectProp(obj: ts.Expression | undefined, name: string): ts.Expression | undefined {
   if (!obj || !ts.isObjectLiteralExpression(obj)) return undefined;
   for (const p of obj.properties) {
@@ -80,8 +80,8 @@ export function isTruthyLiteral(expr: ts.Expression | undefined): boolean {
 }
 
 /**
- * The text a reader of the rendered UI or email would see, roughly: JSX text and
- * string literals, joined with spaces. Import paths and comments are excluded.
+ * Approximately the text that a reader of the rendered UI or email sees: JSX text
+ * and string literals, with spaces between them. Import paths and comments are not included.
  */
 export function scriptText(sf: ts.SourceFile): string {
   const parts: string[] = [];
@@ -101,7 +101,7 @@ export function scriptText(sf: ts.SourceFile): string {
   return parts.join(' ');
 }
 
-/** Visible text of an HTML-like file: tags, comments, scripts and styles removed. */
+/** The visible text of an HTML-like file, without tags, comments, scripts and styles. */
 export function markupText(html: string): string {
   return html
     .replace(/<!--[\s\S]*?-->/g, ' ')

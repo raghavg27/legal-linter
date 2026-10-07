@@ -72,7 +72,7 @@ describe('finding ids', () => {
 });
 
 describe('cross-rule quiet', () => {
-  // A detector that misfires on another rule's fixtures would misfire on real repos too.
+  // If a detector gives an incorrect finding on the fixtures of a different rule, it would also do this on real repos.
   for (const fixture of fixtures.filter((f) => f.mode === 'static' && (f.category === 'pass' || f.category === 'near-miss' || f.fixed))) {
     it(`no rule reports an open finding on ${fixture.ruleId}/${fixture.name}`, async () => {
       const report = await scanRepo(fixture.dir, { rules, toolVersion: VERSION });

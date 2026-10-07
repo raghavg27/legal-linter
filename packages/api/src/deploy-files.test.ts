@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// The cost limits live in these files. A change that loosens one should fail a test, not show up on a bill.
+// The cost limits are in these files. A change that makes a limit larger must make a test fail. It must not show on a bill.
 const dir = path.resolve(import.meta.dirname, '..');
 const read = (f: string) => readFileSync(path.join(dir, f), 'utf8');
 const pkg = JSON.parse(read('package.json')) as { dependencies: Record<string, string> };

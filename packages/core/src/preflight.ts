@@ -1,10 +1,10 @@
 import type { Rule } from './types.ts';
 
-// Matches what a coding agent says it is about to build against each rule's
-// topics. Plain word matching: the result lists which topic matched, so the
-// agent (and anyone reading the result) can see why a rule came up.
+// Compares the text that a coding agent gives for the work that it will start with the
+// topics of each rule. Plain word matching: the result lists the topic that matched. Thus the
+// agent (and each person who reads the result) can see why the result includes a rule.
 
-/** Lowercase words, with a trailing plural "s" dropped so "uploads" matches "upload". */
+/** Lowercase words. A plural "s" at the end is removed, thus "uploads" matches "upload". */
 function words(text: string): string[] {
   return text
     .toLowerCase()
@@ -21,7 +21,7 @@ function indexOfRun(haystack: string[], needle: string[]): number {
   return -1;
 }
 
-/** Blanks out each phrase that only looks like a topic, e.g. "font size" for the fonts rule. */
+/** Removes each phrase that only looks like a topic, for example "font size" for the fonts rule. */
 function withoutPhrases(text: (string | null)[], phrases: readonly string[]): (string | null)[] {
   const out = [...text];
   for (const phrase of phrases) {
@@ -33,7 +33,7 @@ function withoutPhrases(text: (string | null)[], phrases: readonly string[]): (s
 
 export interface TopicMatch {
   rule: Rule;
-  /** The rule topics found in the description. */
+  /** The rule topics that the description contains. */
   matchedOn: string[];
 }
 

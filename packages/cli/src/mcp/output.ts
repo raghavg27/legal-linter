@@ -1,9 +1,9 @@
 import { z } from 'zod';
 import { FRAMEWORKS } from '@legal-lint/core';
 
-// Output schemas for the MCP tools. They mirror the finding types in
-// @legal-lint/core; the SDK checks every result against them, so a drift
-// between the engine and what agents are told to expect fails the tests.
+// Output schemas for the MCP tools. They are the same as the finding types in
+// @legal-lint/core. The SDK checks each result against them. Thus, if the engine and
+// the data that agents expect become different, the tests fail.
 
 const confidence = z.enum(['high', 'medium', 'low']);
 const applicability = z.enum(['yes', 'no', 'unknown']);
@@ -59,7 +59,7 @@ export const findingSchema = z.discriminatedUnion('status', [
   findingBase.extend({ status: z.literal('needs_judgment'), judgment: judgmentSchema }),
 ]);
 
-/** A finding as the MCP tools return it: the engine's finding, with long judgment material cut. */
+/** A finding as the MCP tools return it: the finding of the engine, with long judgment material cut. */
 export type AgentFinding = z.infer<typeof findingSchema>;
 
 const appliesHere = z.object({ value: applicability, reason: z.string(), questions: z.array(intakeQuestion) });

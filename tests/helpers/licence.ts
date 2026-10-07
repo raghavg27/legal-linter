@@ -3,7 +3,7 @@ import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-/** Matches the server's key format: ll_ + 32 base62 characters. */
+/** Matches the key format of the server: ll_ + 32 base62 characters. */
 export const TEST_KEY = 'll_0123456789abcdefghijklmnopqrstuv';
 
 /** A temporary LEGAL_LINT_HOME with an optional key file and licence cache. */

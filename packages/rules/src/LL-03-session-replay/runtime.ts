@@ -4,7 +4,7 @@ import { SDKS } from './sdks.ts';
 const CA_RISK =
   "Under California's Invasion of Privacy Act, recording visitors before telling them is the basis of class demand letters seeking statutory damages.";
 
-/** One finding per replay tool seen on the site, across every page visited. */
+/** One finding for each replay tool on the site, for all the visited pages together. */
 export function detectRuntime(site: SiteCapture): RawFinding[] {
   const findings: RawFinding[] = [];
   for (const sdk of SDKS) {

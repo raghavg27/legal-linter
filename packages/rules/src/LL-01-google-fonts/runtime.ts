@@ -11,7 +11,7 @@ function hostOf(url: string): string | null {
   }
 }
 
-/** One finding per site: the same font requests usually repeat on every page visited. */
+/** One finding for each site: the same font requests usually occur again on each page that the crawler visits. */
 export function detectRuntime(site: SiteCapture): RawFinding[] {
   const seen = new Set<string>();
   const evidence: RuntimeEvidence[] = [];

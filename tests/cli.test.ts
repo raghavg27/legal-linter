@@ -88,7 +88,7 @@ describe('legal-lint init', () => {
 
   it('asks every rulebook intake question, re-asks bad answers, and keeps skipped ones unknown', async () => {
     const dir = await mkdtemp(path.join(tmpdir(), 'legal-lint-init-'));
-    // countries, euUk (bad then good), audience, revenue, users, subs, mkt email, sms, uploads, dmca, health, video, apps
+    // countries, euUk (incorrect, then correct), audience, revenue, users, subs, mkt email, sms, uploads, dmca, health, video, apps
     const answers = ['us, de', 'maybe', 'y', 'general', '', '', 'y', 'n', '', 'yes', '', '', '', 'n'].join('\n');
     const { code, stdout } = await cliWithInput(answers, 'init', dir);
     expect(code).toBe(EXIT.clean);

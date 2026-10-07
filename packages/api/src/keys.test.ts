@@ -37,7 +37,7 @@ describe('keys', () => {
     expect(await checkKey(store, generateKey(), NOW)).toEqual({ valid: false, reason: 'unknown' });
     expect(await checkKey(store, 'not a key', NOW)).toEqual({ valid: false, reason: 'unknown' });
     expect(await checkKey(store, gone.key, NOW)).toEqual({ valid: false, reason: 'revoked' });
-    // Expiry is exclusive: at the stored instant the key no longer works.
+    // Expiry is exclusive: at the stored instant, the key stops.
     expect(await checkKey(store, old.key, NOW)).toEqual({ valid: false, reason: 'expired' });
     expect(await checkKey(store, old.key, new Date(NOW.getTime() - 1))).toMatchObject({ valid: true });
   });

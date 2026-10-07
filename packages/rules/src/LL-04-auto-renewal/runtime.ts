@@ -1,7 +1,7 @@
 import type { Evidence, RawFinding, SiteCapture } from '@legal-lint/core';
 import { ARL_RISK, GAP, hasRecurringPrice, hasRenewalDisclosure } from './signals.ts';
 
-/** Pages visited (the start page and followed pricing links) that show recurring prices without renewal terms. */
+/** Visited pages (the start page and the pricing links that the crawler followed) that show recurring prices without renewal terms. */
 export function detectRuntime(site: SiteCapture): RawFinding[] {
   const evidence: Evidence[] = [];
   for (const page of site.pages) {

@@ -31,7 +31,7 @@ function knownRuleIds(ids: string[] | undefined): string[] | undefined {
 
 interface OutputOptions {
   json?: boolean;
-  /** true: write to the default report path. A string: write there. */
+  /** true: write to the default report path. A string: write to that path. */
   html?: boolean | string;
 }
 
@@ -40,14 +40,14 @@ async function output(report: ScanReport, opts: OutputOptions, reportDir: string
   else io.stdout.write(`${formatText(report, { color: Boolean(io.stdout.isTTY) && !process.env.NO_COLOR })}\n`);
   if (opts.html) {
     const file = await writeHtmlReport(report, opts.html === true ? defaultReportPath(reportDir) : opts.html);
-    // stderr, so --json output stays parseable.
+    // stderr. Thus the --json output stays parseable.
     io.stderr.write(`HTML report: ${file}\n`);
   }
   return report.summary.open > 0 ? EXIT.findings : EXIT.clean;
 }
 
 function buildProgram(io: Io, setExit: (code: number) => void, rt: RuntimeEnv): Command {
-  // No free tier: scans run only with a valid key. A grace-period warning goes to stderr so --json stays parseable.
+  // No free tier: scans run only with a valid key. A grace-period warning goes to stderr. Thus --json stays parseable.
   const gate = async (): Promise<Licence> => {
     const licence = await checkLicence(rt, VERSION);
     if (licence.warning) io.stderr.write(`legal-lint: ${licence.warning}\n`);
@@ -164,7 +164,7 @@ function buildProgram(io: Io, setExit: (code: number) => void, rt: RuntimeEnv): 
     .command('mcp')
     .description('Start the MCP server on stdio, for coding agents such as Claude Code and Cursor.')
     .action(async () => {
-      // Loaded only here, so the scan commands do not pay for the MCP SDK.
+      // Loaded only here. Thus the scan commands do not load the MCP SDK.
       const { serve } = await import('./mcp/serve.ts');
       serve(VERSION);
     });
@@ -185,7 +185,7 @@ export async function run(argv: string[], io: Io = process, rt: RuntimeEnv = def
     await program.parseAsync(argv, { from: 'user' });
     return code;
   } catch (e) {
-    // Commander has already printed its own usage message.
+    // Commander already showed its own usage message.
     if (e instanceof CommanderError) return e.exitCode === 0 ? EXIT.clean : EXIT.error;
     io.stderr.write(`legal-lint: ${(e as Error).message}\n`);
     return EXIT.error;

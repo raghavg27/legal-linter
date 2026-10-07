@@ -7,5 +7,5 @@ import { ll05 } from './LL-05-dmca-agent/index.ts';
 
 export { ll01, ll02, ll03, ll04, ll05 };
 
-/** Every shipped rule, in id order. */
+/** Each shipped rule, in the sequence of the ids. */
 export const rules: readonly Rule[] = [ll01, ll02, ll03, ll04, ll05];

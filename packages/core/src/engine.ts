@@ -24,19 +24,19 @@ export interface ScanOptions {
   toolVersion: string;
   /**
    * Intake answers. undefined: read legal-lint.config.json from the scanned
-   * directory (or cwd for URL scans). null: no intake.
+   * directory (or from cwd for URL scans). null: no intake.
    */
   intake?: Intake | null;
-  /** Stored answers to judgment questions. undefined: read from the same config file. */
+  /** Stored answers to judgment questions. undefined: read them from the same config file. */
   judgments?: StoredJudgments;
-  /** Only run these rule ids. */
+  /** Run only these rule ids. */
   only?: readonly string[];
 }
 
 const CONFIDENCE_ORDER = { high: 0, medium: 1, low: 2 } as const;
 const STATUS_ORDER = { open: 0, needs_judgment: 1, needs_intake: 2 } as const;
 
-/** Turns a detector result into a finding, or null when a stored judgment drops it. */
+/** Changes a detector result into a finding. Returns null when a stored judgment removes it. */
 function toFinding(
   rule: Rule,
   raw: RawFinding,
@@ -64,7 +64,7 @@ function toFinding(
     const option = stored?.contentHash === hash ? raw.judgment.options.find((o) => o.value === stored.answer) : undefined;
     if (!option) return { ...base, status: 'needs_judgment', judgment: { ...raw.judgment, contentHash: hash } };
     if (option.outcome === 'drop') return null;
-    // The open question was the only reason for doubt; someone has now read the material.
+    // The open question was the only reason for doubt. A person or agent has now read the material.
     return { ...base, confidence: 'high', status: 'open' };
   }
   return { ...base, status: 'open' };
@@ -119,7 +119,7 @@ async function runRules(
         if (finding) findings.push(finding);
       }
     } catch (e) {
-      // One broken detector must not hide the other rules' findings.
+      // One detector with an error must not hide the findings of the other rules.
       run.error = (e as Error).message;
     }
   }
@@ -147,7 +147,7 @@ export async function scanRepo(root: string, opts: ScanOptions): Promise<ScanRep
   };
 }
 
-/** Runs runtime rules over an existing capture. Split from scanSite so rules can be tested on saved captures. */
+/** Runs runtime rules on a capture that exists. It is separate from scanSite, thus rules can be tested on saved captures. */
 export async function evaluateCapture(capture: SiteCapture, opts: ScanOptions): Promise<ScanReport> {
   const { intake, judgments } = await resolveConfig(opts, process.cwd());
   const rules = selectRules(opts, (r) => typeof r.detectRuntime === 'function');

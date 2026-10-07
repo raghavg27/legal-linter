@@ -3,7 +3,7 @@ import fixYaml from './fix.yaml?raw';
 import legalYaml from './legal.yaml?raw';
 import { detectStatic } from './static.ts';
 
-/** The intake's "hosts user uploads publicly" answer decides whether the rule applies. */
+/** The intake answer "hosts user uploads publicly" decides if the rule applies. */
 function applies(intake: Intake | null): ApplicabilityResult {
   const value = intake?.hostsPublicUploads;
   if (value === true) return { value: 'yes', reason: 'Intake: hosts user uploads publicly.' };

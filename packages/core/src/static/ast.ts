@@ -1,7 +1,7 @@
 import ts from 'typescript';
 
-// Syntax trees only: one createSourceFile per file, no Program and no type checker.
-// That is enough to tell code from comments and strings, and keeps scans fast.
+// Only syntax trees: one createSourceFile for each file, no Program and no type checker.
+// That is sufficient to identify code, comments and strings, and it keeps the scans fast.
 
 const SCRIPT_KINDS: Record<string, ts.ScriptKind> = {
   '.ts': ts.ScriptKind.TS,
@@ -22,7 +22,7 @@ export function scriptKindOf(file: string): ts.ScriptKind | undefined {
 export function parseSource(file: string, text: string): ts.SourceFile | null {
   const kind = scriptKindOf(file);
   if (kind === undefined) return null;
-  // .js files often contain JSX (Create React App, older Next.js), so parse them as JSX.
+  // .js files frequently contain JSX (Create React App, older Next.js). Thus parse them as JSX.
   const effective = kind === ts.ScriptKind.JS ? ts.ScriptKind.JSX : kind;
   return ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, effective);
 }
@@ -32,7 +32,7 @@ export function walk(node: ts.Node, visit: (node: ts.Node) => void): void {
   ts.forEachChild(node, (child) => walk(child, visit));
 }
 
-/** 1-based start and end lines of a node, excluding leading trivia. */
+/** The first and last lines of a node (the first line is 1), without the leading trivia. */
 export function lineRange(sf: ts.SourceFile, node: ts.Node): { startLine: number; endLine: number } {
   return {
     startLine: sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1,
@@ -40,7 +40,7 @@ export function lineRange(sf: ts.SourceFile, node: ts.Node): { startLine: number
   };
 }
 
-/** The literal value of a JSX attribute, when it is a plain string: href="x", href={'x'} or href={`x`}. */
+/** The literal value of a JSX attribute when it is a plain string: href="x", href={'x'} or href={`x`}. */
 export function jsxAttributeString(
   attributes: ts.JsxAttributes,
   name: string,

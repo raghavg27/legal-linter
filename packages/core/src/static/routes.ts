@@ -4,11 +4,11 @@ import { isNonShippingFile } from './file-kinds.ts';
 import { walk } from './ast.ts';
 
 export interface RouteInfo {
-  /** URL path, e.g. "/unsubscribe" or "/api/billing/portal". Dynamic segments stay as written: "/u/[id]". */
+  /** URL path, for example "/unsubscribe" or "/api/billing/portal". Dynamic segments stay as written: "/u/[id]". */
   path: string;
   file: string;
   kind: 'page' | 'api' | 'server';
-  /** 1-based line of a server route registration (Express, Hono, Fastify). */
+  /** The line of a server route registration (Express, Hono, Fastify). The first line is 1. */
   line?: number;
 }
 
@@ -19,7 +19,7 @@ function cleanSegments(segments: string[]): string {
   return `/${kept.join('/')}`.replace(/\/+$/, '') || '/';
 }
 
-/** Routes implied by file layout: Next.js app and pages routers, Remix, SvelteKit, Astro, Nuxt, static HTML. */
+/** Routes that the file layout gives: Next.js app and pages routers, Remix, SvelteKit, Astro, Nuxt, static HTML. */
 function fileRoutes(file: string): RouteInfo | null {
   if (!PAGE_EXT.test(file) || isNonShippingFile(file)) return null;
   let m: RegExpExecArray | null;
@@ -51,7 +51,7 @@ function fileRoutes(file: string): RouteInfo | null {
 
 const SERVER_METHODS = new Set(['get', 'post', 'put', 'patch', 'delete', 'all', 'use', 'route']);
 
-/** Express-style registrations: app.get('/unsubscribe', ...), router.post('/billing/cancel', ...). */
+/** Registrations in the Express style: app.get('/unsubscribe', ...), router.post('/billing/cancel', ...). */
 function serverRoutes(file: string, sf: ts.SourceFile): RouteInfo[] {
   const out: RouteInfo[] = [];
   walk(sf, (node) => {

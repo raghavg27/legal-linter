@@ -5,8 +5,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { startEgressProxy, type EgressProxy } from './proxy.ts';
 import type { Resolver } from './target.ts';
 
-// Real sockets only: an "allowed" server on 127.0.0.1 and an "internal" one on ::1.
-// The test policy allows 127.0.0.1 and nothing else.
+// Only real sockets: a "permitted" server on 127.0.0.1 and an "internal" server on ::1.
+// The test policy permits 127.0.0.1 and nothing else.
 const allowLocalV4 = (ip: string) => ip === '127.0.0.1';
 
 async function listen(host: string, handler: http.RequestListener = (_req, res) => res.end('ok')) {

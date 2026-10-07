@@ -17,7 +17,7 @@ const TRANSACTIONAL =
 
 export type Classification = 'marketing' | 'transactional' | 'unclear';
 
-/** Names and subject only: template bodies mention "order" or "sale" too often to be a signal. */
+/** Only names and the subject: template bodies contain "order" or "sale" too frequently to be a signal. */
 export function classify(send: EmailSend): Classification {
   const names = [
     send.subject ?? '',
@@ -59,7 +59,7 @@ function footerGaps(content: TemplateContent): string[] {
 // ---------- suppression ----------
 
 const UNSUB_ROUTE = /unsubscribe|opt-?out|email-preferences|preferences|subscriptions?\/manage/i;
-// Names a writer and a reader of the suppression list share. Plain "unsubscribe" is excluded: it is the route and link text.
+// Names that the writer and the reader of the suppression list share. Plain "unsubscribe" is not included, because it is the route and the link text.
 const LIST_FIELD = /\b\w*(unsubscribed|suppress\w*|opt_?out\w*|opted_?out|subscribed|marketing_?(consent|opt_?in|emails?)|email_?opt_?in|newsletter_?(opt_?in|subscribed))\w*\b/gi;
 
 async function filesReadBy(repo: RepoIndex, file: string): Promise<string[]> {
@@ -80,7 +80,7 @@ async function suppressionGap(repo: RepoIndex, send: EmailSend, routes: RouteInf
 
   const fields = new Set<string>();
   for (const r of unsubRoutes) for (const m of (await repo.read(r.file)).matchAll(LIST_FIELD)) fields.add(m[0].toLowerCase());
-  // The route writes something we cannot name: stay quiet rather than guess.
+  // The route writes data with a name that we cannot identify: give no finding. Do not guess.
   if (fields.size === 0) return null;
 
   for (const f of await filesReadBy(repo, send.file)) {
@@ -134,7 +134,7 @@ export async function detectStatic(repo: RepoIndex): Promise<RawFinding[]> {
     if (kind === 'transactional') continue;
 
     const content = await templateContent(repo, send);
-    // Provider-hosted or unresolved bodies: the footer cannot be seen, so only suppression is checked.
+    // Bodies that the provider hosts or that the code cannot resolve: the footer is not visible. Thus only the suppression is checked.
     const gaps = [...(content ? footerGaps(content) : [])];
     const suppression = await suppressionGap(repo, send, routes);
     if (suppression) gaps.push(suppression);

@@ -21,7 +21,7 @@ const ALWAYS_SKIPPED_DIRS = new Set([
   'build',
   'out',
   'coverage',
-  // Legal Lint's own HTML reports, which quote the findings.
+  // The HTML reports of Legal Lint, which contain quotes of the findings.
   '.legal-lint',
 ]);
 

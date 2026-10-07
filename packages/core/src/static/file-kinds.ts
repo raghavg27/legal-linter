@@ -1,4 +1,4 @@
-// How detectors decide which files to read and how.
+// How detectors decide which files to read, and how to read them.
 
 export type FileKind = 'script' | 'css' | 'scss' | 'markup' | 'other';
 
@@ -15,8 +15,8 @@ export function fileKind(file: string): FileKind {
 }
 
 /**
- * Files that never reach a visitor's browser: tests, stories, fixtures and
- * minified vendor bundles. A font URL in a test assertion is not a font load.
+ * Files that never go to the browser of a visitor: tests, stories, fixtures and
+ * minified vendor bundles. A font URL in a test assertion does not load a font.
  */
 export function isNonShippingFile(file: string): boolean {
   return (

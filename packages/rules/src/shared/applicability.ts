@@ -1,10 +1,10 @@
 import type { ApplicabilityResult, Intake } from '@legal-lint/core';
 
 /**
- * US-scoped rules (California visitors, US recipients). The intake asks for
- * countries, not states, so serving the US counts as having California visitors.
- * Unlike the EU check there is no dedicated question, so a country list without
- * the US is taken as the owner's answer.
+ * Rules for the US (visitors from California, recipients in the US). The intake
+ * asks for countries, not states. Thus a site that serves the US counts as a site
+ * with visitors from California. The EU check has a separate question, but this
+ * check does not. Thus a country list without the US is the answer of the owner.
  */
 export function appliesToUsVisitors(intake: Intake | null, who: string): ApplicabilityResult {
   const countries = intake?.countries;
@@ -15,7 +15,7 @@ export function appliesToUsVisitors(intake: Intake | null, who: string): Applica
   return { value: 'no', reason: `Intake: does not serve the US (${countries.join(', ') || 'none listed'}).` };
 }
 
-/** Combines a yes/no intake flag with US applicability. */
+/** Combines a yes/no intake flag with the US applicability. */
 export function appliesWithFlag(
   intake: Intake | null,
   flag: keyof Intake,

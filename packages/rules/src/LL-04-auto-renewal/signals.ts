@@ -1,6 +1,6 @@
-// Text signals shared by the static and runtime checks.
+// Text signals that the static and runtime checks share.
 
-/** Says the subscription renews on its own. Paired with CANCEL to count as a renewal disclosure. */
+/** Tells that the subscription renews automatically. With CANCEL, it counts as a renewal disclosure. */
 export const RENEWAL =
   /auto(matic(ally)?)?[- ]?renew|renews? (automatically|each|every|monthly|annually|yearly|until)|recurring (charge|payment|billing|subscription)|until (you )?cancel(l?ed)?|billed (monthly|annually|yearly|every)|charged (monthly|annually|yearly|every)/i;
 export const CANCEL = /cancel/i;

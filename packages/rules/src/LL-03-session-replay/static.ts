@@ -22,7 +22,7 @@ interface InitSite {
   startLine: number;
   endLine: number;
   observed: string;
-  /** recording: the code starts recording. maybe: recording depends on remote project settings (PostHog). */
+  /** recording: the code starts the recording. maybe: the recording depends on remote project settings (PostHog). */
   strength: 'recording' | 'maybe';
 }
 
@@ -43,7 +43,7 @@ function isExit(stmt: ts.Statement): boolean {
   return ts.isBlock(stmt) && stmt.statements.length > 0 && isExit(stmt.statements[0]!);
 }
 
-/** True when the node only runs after a consent decision: inside a consent condition, callback or guard. */
+/** True when the node runs only after a consent decision: in a consent condition, callback or guard. */
 export function isConsentGated(node: ts.Node, sf: ts.SourceFile): boolean {
   const text = (n: ts.Node) => n.getText(sf);
   for (let child: ts.Node = node, parent = node.parent; parent; child = parent, parent = parent.parent) {
@@ -75,7 +75,7 @@ export function isConsentGated(node: ts.Node, sf: ts.SourceFile): boolean {
         return true;
       }
     }
-    // Early-return guard earlier in the same block: if (!hasConsent) return;
+    // A guard with an early return before this node in the same block: if (!hasConsent) return;
     if (ts.isBlock(parent) || ts.isSourceFile(parent)) {
       for (const stmt of parent.statements) {
         if (stmt === child) break;
@@ -97,7 +97,7 @@ function resolveObject(expr: ts.Expression | undefined, sf: ts.SourceFile): ts.E
   return found ?? expr;
 }
 
-/** PostHog options decide whether recording happens and whether capture waits for opt-in. */
+/** PostHog options decide if the recording occurs and if the capture waits for opt-in. */
 function postHogVerdict(options: ts.Expression | undefined): 'off' | 'gated' | InitSite['strength'] {
   if (isTruthyLiteral(objectProp(options, 'disable_session_recording'))) return 'off';
   if (isTruthyLiteral(objectProp(options, 'opt_out_capturing_by_default'))) return 'gated';
@@ -199,7 +199,7 @@ function markupSites(text: string): InitSite[] {
     const body = m[2]!;
     const sdk = SDKS.find((s) => s.snippet.test(attrs) || s.snippet.test(body));
     if (!sdk) continue;
-    // Consent managers block scripts by marking them text/plain until the visitor opts in.
+    // Consent managers block scripts: they mark them text/plain until the visitor opts in.
     if (/type\s*=\s*["']?text\/plain/i.test(attrs)) continue;
     if (CONSENT.test(body)) continue;
     if (sdk.name === 'PostHog' && /disable_session_recording\s*:\s*true|opt_out_capturing_by_default\s*:\s*true/.test(body)) continue;

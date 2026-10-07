@@ -32,8 +32,8 @@ describe('checkTarget with the production policy', () => {
     'http://10.0.0.1/',
     'http://169.254.169.254/computeMetadata/v1/',
     'http://metadata.google.internal/',
-    'https://mixed.test/', // one private answer is enough to refuse
-    'https://example.com:8443/', // non-web port
+    'https://mixed.test/', // one private answer is sufficient to refuse
+    'https://example.com:8443/', // port that is not a web port
     'http://8.8.8.8:22/',
   ];
   for (const url of privateUrls) {

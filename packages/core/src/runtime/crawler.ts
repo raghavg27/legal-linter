@@ -3,30 +3,30 @@ import type { CapturedRequest, PageCapture, SiteCapture } from '../types.ts';
 
 export interface CaptureOptions {
   toolVersion: string;
-  /** Navigation timeout per page. */
+  /** Navigation timeout for each page. */
   timeoutMs?: number;
-  /** Reuse a browser (tests share one). Otherwise one is launched and closed. */
+  /** Use this browser again (tests share one). If not set, the crawler starts a browser and closes it. */
   browser?: Browser;
   /**
-   * Record requests to non-local hosts but answer them locally with an empty
-   * response, so nothing leaves the machine. Used by the test suite.
+   * Record requests to hosts that are not local, but answer them locally with an
+   * empty response. Thus no data goes out of the machine. The test suite uses this.
    */
   offline?: boolean;
-  /** Pages to visit including the start page. Extra pages are same-origin links that rules care about. Default 5. */
+  /** Pages to visit, with the start page. The other pages are links on the same origin that the rules need. Default 5. */
   maxPages?: number;
-  /** Stop starting new pages once this many milliseconds have passed since the crawl began. The hosted API uses it to cap a scan's cost. */
+  /** Do not start new pages after this number of milliseconds from the start of the crawl. The hosted API uses it to limit the cost of a scan. */
   budgetMs?: number;
   /**
-   * Hard limit for the whole crawl. When it passes, the browser context is closed,
-   * which ends any call stuck on a frozen page, and the crawl throws.
+   * Hard limit for the full crawl. At this limit, the browser context closes.
+   * This stops each call that waits on a frozen page, and the crawl throws an error.
    */
   deadlineMs?: number;
 }
 
-/** Links worth following from the start page: pricing for LL-04, copyright/DMCA for LL-05, legal pages generally. */
+/** Links from the start page that the crawler follows: pricing for LL-04, copyright/DMCA for LL-05, and legal pages. */
 const RELEVANT_LINK = /\b(pricing|plans?|upgrade|subscribe|subscriptions?|billing|dmca|copyright|terms|legal)\b/i;
 
-/** Same-origin links from the start page whose path or text matches RELEVANT_LINK, pricing first. */
+/** Links on the same origin from the start page, with a path or text that matches RELEVANT_LINK. Pricing first. */
 export function pickFollowLinks(start: PageCapture, max: number): string[] {
   if (max <= 0) return [];
   const origin = new URL(start.finalUrl).origin;
@@ -98,11 +98,11 @@ async function capturePage(context: BrowserContext, url: string, timeoutMs: numb
       msSinceNavigation: Date.now() - navigationStart,
     });
   });
-  // Some replay tools (Hotjar) stream recordings over a websocket, which is not a "request" event.
+  // Some replay tools (Hotjar) send recordings through a websocket. A websocket is not a "request" event.
   const recordSocket = (wsUrl: string) =>
     requests.push({ url: wsUrl, method: 'GET', resourceType: 'websocket', msSinceNavigation: Date.now() - navigationStart });
   if (offline) {
-    // A mocked socket emits no "websocket" event, so record it in the handler; never calling connectToServer() keeps it local.
+    // A mock socket does not send a "websocket" event. Thus record it in the handler. The code never calls connectToServer(), thus the socket stays local.
     await page.routeWebSocket(/.*/, (ws) => recordSocket(ws.url()));
   } else {
     page.on('websocket', (ws) => recordSocket(ws.url()));
@@ -121,7 +121,7 @@ async function capturePage(context: BrowserContext, url: string, timeoutMs: numb
   try {
     navigationStart = Date.now();
     const response = await page.goto(url, { waitUntil: 'load', timeout: timeoutMs });
-    // Give late scripts (replay SDKs, tag managers) a moment, without waiting forever on chatty pages.
+    // Give late scripts (replay SDKs, tag managers) a short time. Do not wait for all time on pages with much network traffic.
     await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => {});
     capture.status = response?.status() ?? null;
     capture.finalUrl = page.url();
@@ -143,8 +143,8 @@ async function capturePage(context: BrowserContext, url: string, timeoutMs: numb
 }
 
 /**
- * Visits a URL in headless Chromium and records every request and cookie from
- * first load. It never clicks, types, scrolls or submits anything.
+ * Visits a URL in headless Chromium and records each request and cookie from
+ * the first load. It never clicks, types, scrolls or submits.
  */
 export async function captureSite(url: string, opts: CaptureOptions): Promise<SiteCapture> {
   const ua = userAgent(opts.toolVersion);

@@ -1,7 +1,7 @@
 import { apiErrorSchema, licenceResponseSchema, scanResponseSchema, type SiteCapture } from '@legal-lint/core';
 import type { RuntimeEnv } from './store.ts';
 
-/** Set after the first Cloud Run deploy (packages/api/DEPLOY.md, step 5). Until then LEGAL_LINT_API_URL is required. */
+/** Set after the first Cloud Run deploy (packages/api/DEPLOY.md, step 5). Until then, LEGAL_LINT_API_URL is necessary. */
 export const DEFAULT_API_URL = '';
 
 export function apiUrl(env: NodeJS.ProcessEnv): string | null {
@@ -14,7 +14,7 @@ export type ValidateResult =
   | { kind: 'invalid'; reason: 'unknown' | 'revoked' | 'expired' }
   | { kind: 'unreachable'; detail: string };
 
-/** Sends the key and the package version, nothing else. */
+/** Sends the key and the package version, and nothing else. */
 export async function validateKey(rt: RuntimeEnv, base: string, key: string, version: string): Promise<ValidateResult> {
   let res: Response;
   try {
@@ -27,7 +27,7 @@ export async function validateKey(rt: RuntimeEnv, base: string, key: string, ver
   } catch (e) {
     return { kind: 'unreachable', detail: (e as Error).message };
   }
-  // Rate limits and server errors say nothing about the key, so grace applies.
+  // Rate limits and server errors give no information about the key. Thus the grace period applies.
   if (res.status >= 500 || res.status === 429) return { kind: 'unreachable', detail: `HTTP ${res.status}` };
   const parsed = licenceResponseSchema.safeParse(await res.json().catch(() => null));
   if (!res.ok || !parsed.success) return { kind: 'unreachable', detail: `unexpected answer (HTTP ${res.status})` };
@@ -43,7 +43,7 @@ export class RemoteScanError extends Error {
   }
 }
 
-/** Sends the key (as a bearer token), the URL and the package version; returns what the hosted browser recorded. */
+/** Sends the key (as a bearer token), the URL and the package version. Returns the data that the hosted browser recorded. */
 export async function remoteCapture(rt: RuntimeEnv, base: string, key: string, url: string, version: string): Promise<SiteCapture> {
   let res: Response;
   try {

@@ -8,10 +8,10 @@ export interface UrlScanOptions {
   rt: RuntimeEnv;
   licence: Licence;
   version: string;
-  /** Use Chromium on this machine even for a public URL. */
+  /** Use Chromium on this machine, also for a public URL. */
   local?: boolean;
   only?: readonly string[];
-  /** Page load timeout for local scans; the hosted scanner sets its own. */
+  /** Page load timeout for local scans. The hosted scanner sets its own timeout. */
   timeoutMs?: number;
   /** undefined: read legal-lint.config.json from the working directory, as before. */
   intake?: Intake | null;
@@ -19,12 +19,12 @@ export interface UrlScanOptions {
   capture?: Omit<CaptureOptions, 'toolVersion'>;
 }
 
-/** localhost and private addresses can only be reached from the user's machine. */
+/** Only the machine of the user can connect to localhost and private addresses. */
 export function scansLocally(url: string, forceLocal?: boolean): boolean {
   return Boolean(forceLocal) || isLocalTarget(new URL(url).hostname);
 }
 
-/** Local scans use Chromium here; public URLs go to the hosted scanner. Rules always run here. */
+/** Local scans use Chromium on this machine. Public URLs go to the hosted scanner. Rules always run on this machine. */
 export async function scanUrl(url: string, opts: UrlScanOptions): Promise<ScanReport> {
   const engine = { rules, toolVersion: opts.version, only: opts.only, intake: opts.intake, judgments: opts.judgments };
   if (scansLocally(url, opts.local)) {

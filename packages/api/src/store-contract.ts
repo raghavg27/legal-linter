@@ -4,7 +4,7 @@ import type { KeyStore, UsageStore } from './store.ts';
 
 export const LIMITS = { perKeyHour: 2, perKeyDay: 3, perMonth: 4 };
 
-/** The same contract runs against Firestore when the emulator is available (Task 7). */
+/** The same contract runs on Firestore when the emulator is available (Task 7). */
 export function storeContract(name: string, make: () => Promise<KeyStore & UsageStore>) {
   describe(`${name} store`, () => {
     it('stores, lists and revokes keys by prefix', async () => {
@@ -22,7 +22,7 @@ export function storeContract(name: string, make: () => Promise<KeyStore & Usage
 
     it('counts scans per key hour, key day and service month', async () => {
       const store = await make();
-      // A unique year per run keeps the global month counter separate between runs.
+      // A different year for each run keeps the global month counter separate between runs.
       const year = 3000 + Math.floor(Math.random() * 5000);
       const at = (iso: string) => new Date(`${year}-${iso}Z`);
       const a = `key-a-${randomUUID()}`;
@@ -33,7 +33,7 @@ export function storeContract(name: string, make: () => Promise<KeyStore & Usage
       expect(await store.reserveScan(a, at('03-10T11:00:00'), LIMITS)).toEqual({ ok: true });
       expect(await store.reserveScan(a, at('03-10T12:00:00'), LIMITS)).toMatchObject({ ok: false, reason: 'key_day' });
       expect(await store.reserveScan(b, at('03-11T09:00:00'), LIMITS)).toEqual({ ok: true });
-      // Month total is now 4 across both keys.
+      // The month total is now 4 for the two keys together.
       expect(await store.reserveScan(b, at('03-11T09:10:00'), LIMITS)).toMatchObject({ ok: false, reason: 'monthly_budget' });
       expect(await store.reserveScan(b, at('04-01T00:00:00'), LIMITS)).toEqual({ ok: true });
     });

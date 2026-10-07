@@ -9,7 +9,7 @@ type Spec =
   | { key: keyof Intake; kind: 'countries' }
   | { key: keyof Intake; kind: 'choice'; choices: string[] };
 
-/** The rulebook's intake list, in its order. Every question can be skipped; skipped means "unknown", never "no". */
+/** The intake list of the rulebook, in its sequence. You can skip each question. Skipped means "unknown", never "no". */
 export const INTAKE_SPECS: Spec[] = [
   { key: 'countries', kind: 'countries' },
   { key: 'euUkVisitors', kind: 'boolean' },
@@ -32,7 +32,7 @@ function hint(spec: Spec): string {
   return spec.choices.join('/');
 }
 
-/** Parses one typed answer. undefined: skipped. Throws on an answer that can't be understood. */
+/** Parses one typed answer. undefined: skipped. Throws an error on an answer that it cannot understand. */
 export function parseAnswer(spec: Spec, input: string): Intake[keyof Intake] | undefined {
   const v = input.trim();
   if (v === '') return undefined;
@@ -82,8 +82,9 @@ export async function askIntake(input: Readable, output: { write(s: string): unk
 export class InitError extends Error {}
 
 /**
- * Writes the intake into legal-lint.config.json, keeping any other keys
- * (stored judgments, licence key). Refuses to replace answered intake without force.
+ * Writes the intake into legal-lint.config.json, and keeps all other keys
+ * (stored judgments, licence key). Without force, it does not replace intake
+ * that has answers.
  */
 export async function writeIntake(dir: string, intake: Intake, force: boolean): Promise<string> {
   const file = path.join(dir, CONFIG_FILE);

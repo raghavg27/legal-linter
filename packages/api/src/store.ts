@@ -4,25 +4,25 @@ export interface KeyStore {
   get(hash: string): Promise<KeyRecord | null>;
   put(hash: string, record: KeyRecord): Promise<void>;
   list(): Promise<(KeyRecord & { hash: string })[]>;
-  /** Revokes every live key with this prefix. Returns how many. */
+  /** Revokes each live key with this prefix. Returns the number of keys. */
   revoke(prefix: string, at: Date): Promise<number>;
 }
 
 export interface ScanLimits {
   perKeyHour: number;
   perKeyDay: number;
-  /** For the whole service, to stay inside the free compute quota. */
+  /** For the full service, to stay in the free compute quota. */
   perMonth: number;
 }
 
 export type Reservation = { ok: true } | { ok: false; reason: 'key_hour' | 'key_day' | 'monthly_budget'; retryAfterSec: number };
 
 export interface UsageStore {
-  /** Counts one scan if every limit allows it, atomically. */
+  /** Counts one scan if each limit permits it, as one atomic operation. */
   reserveScan(keyHash: string, now: Date, limits: ScanLimits): Promise<Reservation>;
 }
 
-/** Fixed UTC windows: simple to count, and the same in every store. */
+/** Fixed UTC windows: easy to count, and the same in each store. */
 export function windowIds(now: Date): { hour: string; day: string; month: string } {
   const iso = now.toISOString();
   return { hour: iso.slice(0, 13), day: iso.slice(0, 10), month: iso.slice(0, 7) };
@@ -39,7 +39,7 @@ export function secondsUntilNext(now: Date, unit: 'hour' | 'day' | 'month'): num
   return Math.max(1, Math.ceil((next.getTime() - now.getTime()) / 1000));
 }
 
-/** The month is checked first: when the service budget is gone, no key can help. */
+/** The month is checked first: when the service has no more budget, no key can change that. */
 export function decide(counts: { hour: number; day: number; month: number }, limits: ScanLimits, now: Date): Reservation {
   if (counts.month >= limits.perMonth) return { ok: false, reason: 'monthly_budget', retryAfterSec: secondsUntilNext(now, 'month') };
   if (counts.day >= limits.perKeyDay) return { ok: false, reason: 'key_day', retryAfterSec: secondsUntilNext(now, 'day') };
@@ -47,7 +47,7 @@ export function decide(counts: { hour: number; day: number; month: number }, lim
   return { ok: true };
 }
 
-/** Usage document ids, shared with the Firestore store. */
+/** Ids of usage documents. The Firestore store uses the same ids. */
 export function usageDocIds(keyHash: string, now: Date): { hour: string; day: string; month: string } {
   const w = windowIds(now);
   return { hour: `${keyHash}_${w.hour}`, day: `${keyHash}_${w.day}`, month: `month_${w.month}` };

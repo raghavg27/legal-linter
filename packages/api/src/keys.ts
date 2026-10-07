@@ -3,16 +3,16 @@ import type { KeyStore } from './store.ts';
 
 const ALPHABET = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 
-/** ll_ plus 32 base62 characters, about 190 bits. */
+/** ll_ and 32 base62 characters, approximately 190 bits. */
 export const KEY_PATTERN = /^ll_[0-9A-Za-z]{32}$/;
 
 export interface KeyRecord {
-  /** First 8 characters of the key, for listing and revoking. */
+  /** The first 8 characters of the key, for list and revoke. */
   prefix: string;
-  /** Who the key is for. */
+  /** The person who gets the key. */
   label: string;
   createdAt: string;
-  /** The key stops working at this instant. null: never. */
+  /** The key stops at this instant. null: never. */
   expiresAt: string | null;
   revokedAt: string | null;
 }
@@ -25,7 +25,7 @@ export function generateKey(): string {
   return key;
 }
 
-/** The store keeps only this hash, so a leaked database does not leak working keys. */
+/** The store keeps only this hash. Thus, if a person gets a copy of the database, they do not get keys that operate. */
 export function hashKey(key: string): string {
   return createHash('sha256').update(key).digest('hex');
 }

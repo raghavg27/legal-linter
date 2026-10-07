@@ -1,8 +1,8 @@
 import type { Evidence, Finding, RuleRun, ScanReport } from '../types.ts';
 
-// A single self-contained page for the founder: no scripts, no external fonts
-// or styles (a report that loaded Google Fonts would trip LL-01 itself), and
-// every value from the scan escaped.
+// One self-contained page for the founder: no scripts, no external fonts
+// or styles (a report that loads Google Fonts would cause an LL-01 finding), and
+// each value from the scan is escaped.
 
 const EXPOSURE_LABEL = {
   statutory_max: 'Statutory maximum',

@@ -4,7 +4,7 @@ export interface SelectedStep {
   title: string;
   why: string;
   instructions: string;
-  /** Framework-specific instructions for the frameworks found in the repo, or every variant when none was found. */
+  /** The instructions for each framework that the repo uses. If the repo uses no known framework, all variants. */
   forFramework: Partial<Record<Framework, string>>;
 }
 
@@ -13,7 +13,7 @@ export interface SelectedGuidance extends Omit<FixGuidance, 'steps'> {
   steps: SelectedStep[];
 }
 
-/** The rule's fix guidance with only the variants that match the repo's frameworks. */
+/** The fix guidance of the rule, with only the variants that match the frameworks of the repo. */
 export function guidanceFor(rule: Rule, frameworks: readonly Framework[]): SelectedGuidance {
   const { steps, ...rest } = rule.fix;
   return {

@@ -2,13 +2,13 @@ import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// docs/architecture.md names the file that owns each diagram. When a file is
-// renamed or deleted, this fails, so the diagrams cannot quietly point at code that is gone.
+// docs/architecture.md names the file that owns each diagram. When a person changes the name of a
+// file or deletes it, this test fails. Thus the diagrams cannot refer to code that does not exist and give no warning.
 
 const root = path.resolve(import.meta.dirname, '..');
 const doc = readFileSync(path.join(root, 'docs/architecture.md'), 'utf8');
 
-/** "core/src/engine.ts" is short for packages/core/src/engine.ts; other paths are from the repo root. */
+/** "core/src/engine.ts" is short for packages/core/src/engine.ts. Other paths start at the repo root. */
 function resolve(ref: string): string {
   return /^(api|cli|core|rules)\/src\//.test(ref) ? path.join(root, 'packages', ref) : path.join(root, ref);
 }

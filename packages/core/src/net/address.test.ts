@@ -21,11 +21,11 @@ describe('isPublicAddress', () => {
     ['::', false],
     ['fe80::1', false],
     ['fc00::1', false],
-    ['fd20:abcd::1', false], // unique-local, used for internal networks
+    ['fd20:abcd::1', false], // unique-local, for internal networks
     ['ff02::1', false],
     ['::ffff:127.0.0.1', false], // IPv4-mapped loopback
     ['::ffff:8.8.8.8', true],
-    ['2002:7f00:1::', false], // 6to4 wrapping 127.0.0.1
+    ['2002:7f00:1::', false], // 6to4 that contains 127.0.0.1
     ['2001:0:4136:e378:8000:63bf:3fff:fdd2', false], // Teredo
     ['64:ff9b::7f00:1', false], // NAT64 of 127.0.0.1
     ['[::1]', false],
@@ -40,7 +40,7 @@ describe('isPublicAddress', () => {
 });
 
 describe('isLocalTarget', () => {
-  // Hostnames as new URL(...).hostname gives them, so odd IPv4 spellings arrive normalised.
+  // Hostnames as new URL(...).hostname gives them. Thus unusual IPv4 spellings come in a normal form.
   const host = (url: string) => new URL(url).hostname;
   const cases: [string, boolean][] = [
     ['http://localhost:3000/', true],

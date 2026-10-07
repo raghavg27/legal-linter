@@ -12,7 +12,7 @@ import {
 } from '@legal-lint/core';
 
 // Upload handlers from the rulebook (multer, formidable, S3 presigned URLs,
-// UploadThing, Cloudinary) plus the storage SDKs common in the target stack.
+// UploadThing, Cloudinary), and the storage SDKs that are frequent in the target stack.
 
 const HINT = /multer|formidable|busboy|uploadthing|cloudinary|presign|getSignedUrl|PutObjectCommand|@vercel\/blob|\.storage\b|firebase\/storage/i;
 
@@ -74,7 +74,7 @@ function sitesIn(sf: ts.SourceFile): { startLine: number; endLine: number; obser
   return sites;
 }
 
-/** Every upload handler in shipped script files. */
+/** Each upload handler in shipped script files. */
 export async function findUploadHandlers(repo: RepoIndex): Promise<StaticEvidence[]> {
   const evidence: StaticEvidence[] = [];
   for (const file of repo.files) {

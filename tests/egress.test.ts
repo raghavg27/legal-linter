@@ -5,9 +5,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { createScanner, type Scanner } from '../packages/api/src/scan.ts';
 import { publicWebOnly, type Resolver } from '../packages/api/src/egress/target.ts';
 
-// The hosted scanner must never reach an internal address, however the page
-// tries: redirect, image, iframe, websocket, or a DNS answer that changes.
-// "internal" listens on ::1; the test policy allows only 127.0.0.1.
+// The hosted scanner must never connect to an internal address, for all the methods
+// that the page can try: redirect, image, iframe, websocket, or a DNS answer that changes.
+// "internal" listens on ::1. The test policy permits only 127.0.0.1.
 
 const VERSION = '0.0.0-test';
 let internal: { server: http.Server; port: number; hits: number };
@@ -31,7 +31,7 @@ beforeAll(async () => {
     '/iframe': `<iframe src="http://${target}/"></iframe>`,
     '/ws': `<script>new WebSocket('ws://${target}/');</script>`,
     '/fetch': `<script>fetch('http://${target}/api').catch(() => {});</script>`,
-    // Freezes the page's main thread once it has loaded, so reading the page never returns.
+    // Freezes the main thread of the page after it loads. Thus a read of the page never returns.
     '/hang': `<script>addEventListener('load', () => setTimeout(() => { for (;;) {} }, 0));</script>`,
   };
   site = await listen('127.0.0.1', (req, res) => {
@@ -82,7 +82,7 @@ describe('hosted scanner egress', () => {
     const rebinding: Resolver = async () => (calls++ === 0 ? ['127.0.0.1'] : ['::1']);
     const s = await createScanner({ policy: allowLocalV4, resolve: rebinding, toolVersion: VERSION, pageTimeoutMs: 5_000 });
     try {
-      // The input check would see 127.0.0.1 (call 1); the proxy resolves again (call 2).
+      // The input check sees 127.0.0.1 (call 1). The proxy resolves again (call 2).
       expect(await rebinding('rebind.test')).toEqual(['127.0.0.1']);
       const before = internal.hits;
       const capture = await s.scan(`http://rebind.test:${internal.port}/`);

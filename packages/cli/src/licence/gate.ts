@@ -11,7 +11,7 @@ export interface Licence {
   source: KeySource;
   checkedAt: string;
   expiresAt: string | null;
-  /** Set when running on the grace period. */
+  /** Set when the tool runs in the grace period. */
   warning?: string;
 }
 
@@ -29,7 +29,7 @@ async function ask(rt: RuntimeEnv, key: string, version: string): Promise<Valida
   return validateKey(rt, base, key, version);
 }
 
-/** Throws LicenceError when Legal Lint may not run. Calls the API at most once a day. */
+/** Throws LicenceError when Legal Lint must not run. Calls the API a maximum of one time each day. */
 export async function checkLicence(rt: RuntimeEnv, version: string): Promise<Licence> {
   const found = await findKey(rt.env);
   if (!found) throw new LicenceError(`Legal Lint needs a licence key. ${HOW}`);
@@ -60,7 +60,7 @@ export async function checkLicence(rt: RuntimeEnv, version: string): Promise<Lic
   throw new LicenceError(`Could not check the licence key: ${result.detail}. Connect to the internet and try again.`);
 }
 
-/** Checks a key with the API, then saves it and caches the answer. */
+/** Checks a key with the API. Then keeps the key and puts the answer in the cache. */
 export async function activate(rt: RuntimeEnv, rawKey: string, version: string): Promise<{ file: string; expiresAt: string | null }> {
   const key = rawKey.trim();
   const result = await ask(rt, key, version);

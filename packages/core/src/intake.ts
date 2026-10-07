@@ -5,7 +5,7 @@ import type { ApplicabilityResult, IntakeQuestion } from './types.ts';
 
 export const CONFIG_FILE = 'legal-lint.config.json';
 
-/** Wording of each intake question, from the rulebook's intake list. */
+/** The text of each intake question, from the intake list of the rulebook. */
 export const INTAKE_QUESTIONS: Record<keyof Intake, string> = {
   countries: 'Which countries does the product serve? (ISO codes, e.g. US, DE, IN)',
   euUkVisitors: 'Are visitors from the EU, EEA or UK expected?',
@@ -26,7 +26,7 @@ export function intakeQuestions(keys: (keyof Intake)[]): IntakeQuestion[] {
   return keys.map((key) => ({ key, question: INTAKE_QUESTIONS[key] }));
 }
 
-/** EU member states plus the EEA (Iceland, Liechtenstein, Norway). */
+/** EU member states and the EEA (Iceland, Liechtenstein, Norway). */
 export const EU_EEA_COUNTRIES = new Set([
   'AT', 'BE', 'BG', 'HR', 'CY', 'CZ', 'DK', 'EE', 'FI', 'FR', 'DE', 'GR', 'HU', 'IE',
   'IT', 'LV', 'LT', 'LU', 'MT', 'NL', 'PL', 'PT', 'RO', 'SK', 'SI', 'ES', 'SE',
@@ -34,8 +34,8 @@ export const EU_EEA_COUNTRIES = new Set([
 ]);
 
 /**
- * Shared applicability for EU-scoped rules. The intake asks one combined
- * EU/UK question, so a "yes" there counts as yes (see DECISIONS.md).
+ * Shared applicability for rules about the EU. The intake asks one question for
+ * the EU and the UK together. Thus a "yes" to that question counts as yes (see DECISIONS.md).
  */
 export function appliesToEuVisitors(intake: Intake | null): ApplicabilityResult {
   if (intake?.euUkVisitors === true) return { value: 'yes', reason: 'Intake: EU/EEA/UK visitors are expected.' };
@@ -51,7 +51,7 @@ export function appliesToEuVisitors(intake: Intake | null): ApplicabilityResult 
 
 export class ConfigError extends Error {}
 
-/** Reads legal-lint.config.json from a directory. Returns null when there is none. */
+/** Reads legal-lint.config.json from a directory. Returns null when there is no file. */
 export async function loadConfig(dir: string): Promise<LegalLintConfig | null> {
   const file = path.join(dir, CONFIG_FILE);
   let raw: string;
@@ -75,8 +75,8 @@ export async function loadConfig(dir: string): Promise<LegalLintConfig | null> {
 }
 
 /**
- * Applies a change to legal-lint.config.json, keeping every key it does not
- * touch, and validates the result before writing. Returns the file path.
+ * Applies a change to legal-lint.config.json. Keeps each key that the change
+ * does not touch, and validates the result before it writes. Returns the file path.
  */
 export async function updateConfigFile(
   dir: string,
@@ -95,7 +95,7 @@ export async function updateConfigFile(
   return file;
 }
 
-/** Adds intake answers, replacing earlier answers to the same questions. */
+/** Adds intake answers. Replaces the old answers to the same questions. */
 export function mergeIntake(dir: string, answers: Intake): Promise<string> {
   return updateConfigFile(dir, (raw) => ({ ...raw, intake: { ...(raw.intake as Intake | undefined), ...answers } }));
 }

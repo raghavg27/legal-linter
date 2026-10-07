@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the API image with Cloud Build and deploys it to Cloud Run.
-# Run from the repo root after the one-time setup in packages/api/DEPLOY.md.
+# Run it from the repo root after you do the one-time setup in packages/api/DEPLOY.md.
 set -euo pipefail
 
 PROJECT="${PROJECT:?Set PROJECT to your Google Cloud project id}"
@@ -11,7 +11,7 @@ IMAGE="$REGION-docker.pkg.dev/$PROJECT/$REPO/api:$(git rev-parse --short HEAD)"
 
 gcloud builds submit --project "$PROJECT" --config packages/api/cloudbuild.yaml --substitutions "_IMAGE=$IMAGE" .
 
-# Free-tier guard rails: one instance at most, scale to zero, CPU only while handling a request.
+# Free-tier limits: a maximum of one instance, scale to zero, CPU only while the service handles a request.
 gcloud run deploy "$SERVICE" \
   --project "$PROJECT" \
   --region "$REGION" \

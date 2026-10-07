@@ -16,7 +16,7 @@ import { bannedWording } from './helpers/wording.ts';
 const VERSION = '0.0.0-test';
 const fixture = (rule: string, name: string) => path.join(FIXTURES_DIR, rule, name);
 
-/** A copy of a fixture in a temp dir, since the server writes the HTML report and config answers into the project. */
+/** A copy of a fixture in a temporary directory, because the server writes the HTML report and config answers into the project. */
 async function project(rule: string, name: string): Promise<string> {
   const dir = await mkdtemp(path.join(tmpdir(), `legal-lint-mcp-${rule}-`));
   await cp(fixture(rule, name), dir, { recursive: true });
@@ -28,7 +28,7 @@ afterEach(async () => {
   while (closers.length) await closers.pop()!();
 });
 
-/** Connects a real SDK client to the server through the same stdio entry point production uses. */
+/** Connects a real SDK client to the server through the same stdio entry point as production. */
 async function connect(opts: Partial<ServerOptions> = {}): Promise<Client> {
   const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
   const handle = startServer({ version: VERSION, ...opts }, serverSide);
@@ -45,7 +45,7 @@ async function call<T = Record<string, unknown>>(client: Client, name: string, a
   const result = (await client.callTool({ name, arguments: args })) as CallToolResult;
   const text = result.content.map((c) => (c.type === 'text' ? c.text : '')).join('');
   if (result.isError) throw new Error(`${name} failed: ${text}`);
-  // Some clients only show the model the text block, so it must carry the same data.
+  // Some clients show only the text block to the model. Thus the text block must contain the same data.
   expect(JSON.parse(text)).toEqual(result.structuredContent);
   return result.structuredContent as T;
 }
@@ -93,7 +93,7 @@ describe('MCP server: tool list', () => {
     const client = await connect();
     const { tools } = await client.listTools();
     for (const t of tools) expect(bannedWording(t.description!), t.name).toBeNull();
-    // The instructions say a fix is no promise of meeting the law; check everything else.
+    // The instructions say that a fix is not a promise that the product meets the law. Check all other text.
     expect(bannedWording(client.getInstructions()!)).toBeNull();
   });
 });
@@ -152,7 +152,7 @@ describe('MCP server: scan_repo', () => {
     const engine = await scanRepo(dir, { rules, toolVersion: VERSION });
 
     expect(out.summary).toEqual({ open: 1, needsJudgment: 0, needsIntake: 0 });
-    // Not compacted: every finding, every location, full snippets.
+    // Not compacted: all findings, all locations, full snippets.
     expect(out.findings).toEqual(engine.findings);
     expect(out.findings[0]!.evidence).toHaveLength(3);
     expect(out.htmlReport).toBe(path.join(dir, '.legal-lint', 'report.html'));
@@ -286,7 +286,7 @@ describe('MCP server: answer_judgment', () => {
     expect(await callError(client, 'answer_judgment', { ...base, answer: 'newsletter' })).toMatch(/Choose one of: marketing, transactional/);
     expect(await callError(client, 'answer_judgment', { ...base, findingId: 'LL-02-0000000000' })).toMatch(/No finding LL-02-0000000000/);
 
-    // The template changed after it was read: the stored hash no longer applies.
+    // The template changed after the agent read it: the stored hash does not apply now.
     await appendFile(path.join(dir, 'emails', 'welcome.tsx'), '\n// edited\n');
     expect(await callError(client, 'answer_judgment', base)).toMatch(/changed since it was read/);
     await access(path.join(dir, 'legal-lint.config.json'));

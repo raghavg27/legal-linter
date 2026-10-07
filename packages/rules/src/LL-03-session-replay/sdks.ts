@@ -2,15 +2,15 @@ export type SdkName = 'FullStory' | 'Hotjar' | 'LogRocket' | 'Microsoft Clarity'
 
 export interface ReplaySdk {
   name: SdkName;
-  /** npm packages whose init call starts recording. */
+  /** npm packages with an init call that starts the recording. */
   packages: string[];
-  /** Method names that start the SDK, called on the imported binding (or imported directly). */
+  /** Method names that start the SDK. The code calls them on the imported binding (or imports them directly). */
   initMethods: string[];
-  /** Markers of the vendor's copy-paste snippet or script URL in HTML or inline scripts. */
+  /** Markers of the copy-paste snippet or the script URL of the vendor in HTML or inline scripts. */
   snippet: RegExp;
-  /** Runtime: a request that carries recording data. */
+  /** Runtime: a request that contains recording data. */
   recording: (url: URL) => boolean;
-  /** Runtime: the replay script itself loading. */
+  /** Runtime: the load of the replay script itself. */
   script: (url: URL) => boolean;
 }
 
@@ -54,16 +54,16 @@ export const SDKS: ReplaySdk[] = [
     packages: ['posthog-js', 'posthog-js/react'],
     initMethods: ['init'],
     snippet: /posthog\.init\s*\(|assets\.i\.posthog\.com\/static\/array/,
-    // /s/ carries session recordings; /e/ and /decide/ are plain analytics, which is not this rule.
+    // /s/ contains session recordings. /e/ and /decide/ are plain analytics, which are not part of this rule.
     recording: (u) => host(u, /(^|\.)posthog\.com$/) && /^\/s\/?$/.test(u.pathname),
     script: (u) => host(u, /(^|\.)posthog\.com$/) && /\/static\/(lazy-)?recorder(-v2)?\.js/.test(u.pathname),
   },
 ];
 
 /**
- * Names that signal a consent decision: consent managers, banner callbacks and
- * consent state. Matching one means the scan treats the code as consent-gated
- * and stays quiet. A missed finding costs less than a false alarm.
+ * Names that show a consent decision: consent managers, banner callbacks and
+ * consent state. If a name matches, the scan thinks that the code has a consent
+ * gate and gives no finding. A missed finding costs less than a false alarm.
  */
 export const CONSENT =
   /consent|cookie_?(accepted|choice|preferences?|banner)|accepted|opt(ed)?[_-]?in|gdpr|ccpa|(analytics|tracking|statistics|marketing|replay|recording)_?(allowed|enabled|accepted|granted|ok)|allow_?(tracking|analytics|recording)|cookiebot|onetrust|optanon|klaro|osano|usercentrics|termly|iubenda|didomi|axeptio/i;

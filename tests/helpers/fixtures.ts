@@ -16,11 +16,11 @@ export interface ExpectedFinding {
 
 export interface Fixture {
   ruleId: string;
-  /** Folder name, e.g. "fires-vite-css-import.fixed". */
+  /** Folder name, for example "fires-vite-css-import.fixed". */
   name: string;
   dir: string;
   category: FixtureCategory;
-  /** A fixed twin: the firing fixture after its fix guidance was followed by hand. */
+  /** A fixed twin: the fixture that fires, after a person followed its fix guidance manually. */
   fixed: boolean;
   mode: 'static' | 'runtime';
   description: string;
@@ -60,7 +60,7 @@ export function loadFixtures(): Fixture[] {
   return fixtures;
 }
 
-/** Reduces real findings to the shape written in expect.json, in a stable order. */
+/** Changes real findings to the shape in expect.json, in a stable sequence. */
 export function toComparable(findings: Finding[]): ExpectedFinding[] {
   const shaped = findings.map((f) => ({
     status: f.status,

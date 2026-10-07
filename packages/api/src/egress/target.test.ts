@@ -49,6 +49,12 @@ describe('checkTarget with the production policy', () => {
     });
   }
 
+  it('points to --local when the name does not resolve, since it may be an internal host', async () => {
+    const r = await checkTarget('https://staging.corp/', publicWebOnly, resolve);
+    expect(r).toMatchObject({ ok: false, reason: 'bad_url' });
+    expect(r.ok ? '' : r.message).toMatch(/internal.*--local/);
+  });
+
   it('tells the user to scan locally when refusing', async () => {
     const r = await checkTarget('http://10.0.0.1/', publicWebOnly, resolve);
     expect(r.ok ? '' : r.message).toMatch(/--local/);

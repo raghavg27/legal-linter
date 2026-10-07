@@ -67,6 +67,6 @@ export async function checkTarget(raw: string, policy: TargetPolicy, resolve: Re
   };
   if (isLocalTarget(url.hostname)) return refused;
   const vetted = await vetHost(url.hostname, portOf(url), policy, resolve);
-  if (!vetted.ok) return vetted.reason === 'unresolvable' ? bad(`Could not resolve ${url.hostname}.`) : refused;
+  if (!vetted.ok) return vetted.reason === 'unresolvable' ? bad(`Could not resolve ${url.hostname}. If it is an internal address, scan it on your own machine with --local.`) : refused;
   return { ok: true, url: url.href };
 }

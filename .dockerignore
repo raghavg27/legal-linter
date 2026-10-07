@@ -1,0 +1,9 @@
+.git
+**/node_modules
+**/dist
+fixtures
+tests
+docs
+.legal-lint
+*.md
+!packages/api/DEPLOY.md

@@ -9,7 +9,8 @@
   "scripts": {
     "build": "pnpm --filter legal-lint build",
     "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit"
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "build:api": "pnpm --filter @legal-lint/api build"
   },
   "devDependencies": {
     "@legal-lint/core": "workspace:*",

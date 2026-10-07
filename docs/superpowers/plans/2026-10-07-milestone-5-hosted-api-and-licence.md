@@ -1,10 +1,10 @@
 # Milestone 5: Hosted API and Licence Keys Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to do this plan one task at a time. The steps use checkbox (`- [ ]`) syntax to record progress.
 
-**Goal:** A Cloud Run service that validates licence keys and loads public URLs in Chromium behind an SSRF-proof egress proxy, plus a licence gate in the CLI and MCP server (no free tier).
+**Goal:** A Cloud Run service that validates licence keys and loads public URLs in Chromium behind an egress proxy that prevents SSRF. Also a licence gate in the CLI and in the MCP server (no free tier).
 
-**Architecture:** New private package `packages/api` (Hono on Node, Firestore key and usage store, in-process egress proxy in front of Playwright Chromium). The server returns a raw `SiteCapture`; the CLI evaluates rules locally with `evaluateCapture`, so intake and judgments never leave the machine. The CLI gains `src/licence/` (key lookup, 24 h cache, 7-day grace, API client) and `src/scan-url.ts` (local vs remote), used by both the commands and the MCP tools.
+**Architecture:** A new private package `packages/api` (Hono on Node, a Firestore store for keys and usage, an egress proxy in the process in front of Playwright Chromium). The server returns a raw `SiteCapture`. The CLI runs the rules locally with `evaluateCapture`. Thus intake and judgments never go out of the machine. The CLI gets `src/licence/` (key lookup, 24 h cache, 7-day grace, API client) and `src/scan-url.ts` (local or remote). The commands and the MCP tools both use them.
 
 **Tech Stack:** TypeScript 6, Node 22 (container) / >=20 (CLI), pnpm 10 workspace, Hono 4.13.13, @hono/node-server 2.1.3, ipaddr.js 2.5.0, @google-cloud/firestore 9.3.1, Playwright 1.63.0, zod 4.6.5, Vitest 5, tsup 8.5.1.
 
@@ -12,29 +12,29 @@
 
 ## Global Constraints
 
-- The only data sent to the API: the licence key, the package version and, for URL scans, the URL. Never file paths, file contents, intake or judgments.
-- No free tier: without a valid key, `scan`, `scan-url` and every MCP tool refuse. `--help`, `--version`, `init`, `activate` and `licence` run without a key.
-- Key source order: `LEGAL_LINT_KEY`, then `~/.legal-lint/key` (`LEGAL_LINT_HOME` overrides the folder). `licenceKey` in `legal-lint.config.json` is refused.
-- Cache 24 hours; grace 7 days only when the API is unreachable (network error, timeout, 5xx, 429); a definite invalid, revoked or expired answer stops at once and deletes the cache.
-- Key format `ll_` + 32 base62 characters; the server stores only `sha256(key)` as the document id plus the first 8 characters.
-- Limits (env-configurable): 1,500 scans per UTC month for the service; 10 per key per UTC hour; 50 per key per UTC day; 30 licence checks per IP per hour; 10 failed authentications per IP per hour; 2 scans running, 4 waiting; request bodies over 4 KB refused.
-- Scan budget: no new page is started after 40 s; each page has a 15 s load timeout.
-- The hosted scanner only loads public unicast addresses on ports 80 and 443, checked at input and again on every connection Chromium makes.
-- Cloud Run: us-central1, request-based billing (`--cpu-throttling`), max 1 instance, min 0, 1 vCPU, 2 GiB, timeout 120 s. Nothing is deployed in this milestone; the owner deploys from `DEPLOY.md`.
-- Logs contain only route, outcome, key prefix, URL host and duration. Never the full key, URL path or file data.
+- The only data that goes to the API: the licence key, the package version and, for URL scans, the URL. Never file paths, file contents, intake or judgments.
+- No free tier: without a valid key, `scan`, `scan-url` and each MCP tool refuse to run. `--help`, `--version`, `init`, `activate` and `licence` run without a key.
+- The sequence of key sources: `LEGAL_LINT_KEY`, then `~/.legal-lint/key` (`LEGAL_LINT_HOME` overrides the folder). The tool refuses `licenceKey` in `legal-lint.config.json`.
+- Cache: 24 hours. Grace: 7 days, only when the tool cannot connect to the API (network error, timeout, 5xx, 429). A clear invalid, revoked or expired answer stops the tool immediately and deletes the cache.
+- Key format: `ll_` and 32 base62 characters. The server keeps only `sha256(key)` as the document id, and the first 8 characters.
+- Limits (you can set them with environment variables): 1,500 scans for each UTC month for the service; 10 for each key for each UTC hour; 50 for each key for each UTC day; 30 licence checks for each IP address for each hour; 10 failed authentications for each IP address for each hour; 2 scans that run, 4 that wait. The API refuses request bodies larger than 4 KB.
+- Scan budget: after 40 s, the scan does not start a new page. Each page has a load timeout of 15 s.
+- The hosted scanner loads only public unicast addresses on ports 80 and 443. It checks this at the input, and again on each connection that Chromium makes.
+- Cloud Run: us-central1, request-based billing (`--cpu-throttling`), a maximum of 1 instance, a minimum of 0, 1 vCPU, 2 GiB, timeout 120 s. Nothing is deployed in this milestone. The owner deploys with `DEPLOY.md`.
+- Logs contain only the route, the outcome, the key prefix, the URL host and the duration. Never the full key, the URL path or file data.
 - No LLM calls, no obfuscation, no anti-tamper code.
-- Wording: findings and messages never say the user "is violating" or "is non-compliant".
-- Commits: plain `git commit -m "<conventional message>"` as the repo's git user. No `Co-Authored-By`, no session links, no push (owner instruction; overrides any attribution reminder).
-- One line per non-obvious choice in `DECISIONS.md`; legal questions go to `LEGAL_REVIEW.md`.
+- Text: findings and messages never say that the user "is violating" or "is non-compliant".
+- Commits: plain `git commit -m "<conventional message>"` as the git user of the repo. No `Co-Authored-By`, no session links, no push (instruction from the owner. It overrides all attribution reminders).
+- One line in `DECISIONS.md` for each decision that is not obvious. Legal questions go to `LEGAL_REVIEW.md`.
 - Stop after the milestone and wait for the owner.
 
-## Review Focus
+## Review focus
 
-1. **A key that expires while its 24-hour cache is still fresh.** The gate must refuse once `expiresAt` has passed, not keep working until the next check. Pinned in Task 8 ("refuses a cached licence past its expiry").
-2. **A hand-edited or corrupt `licence.json`, or a key file with CRLF or spaces.** The cache is ignored, not crashed on, and the key is trimmed. Pinned in Task 8.
-3. **A server and client on different capture shapes.** The CLI says to update or use `--local` instead of throwing a zod dump. Pinned in Task 9 ("rejects a capture it cannot read").
-4. **Chromium crashing or being closed between scans.** The next scan launches a new browser instead of failing forever. Pinned in Task 5.
-5. **Odd spellings of local hosts:** `LOCALHOST.`, `app.localhost`, `[::ffff:127.0.0.1]`, `0x7f.1`, `2130706433`. These count as local and the hosted scanner refuses them. Pinned in Task 1 (table) and Task 4 (`checkTarget`).
+1. **A key that expires while its 24-hour cache is still new.** The gate must refuse the key after `expiresAt`. It must not continue to operate until the next check. Task 8 tests this ("refuses a cached licence past its expiry").
+2. **A `licence.json` that a person edited or that is corrupt, or a key file with CRLF or spaces.** The tool ignores the cache and does not crash. It removes the spaces from the key. Task 8 tests this.
+3. **A server and a client that use different capture shapes.** The CLI tells the user to update or to use `--local`. It does not show a zod error dump. Task 9 tests this ("rejects a capture it cannot read").
+4. **Chromium crashes or closes between scans.** The next scan starts a new browser. It does not fail for all subsequent scans. Task 5 tests this.
+5. **Unusual spellings of local hosts:** `LOCALHOST.`, `app.localhost`, `[::ffff:127.0.0.1]`, `0x7f.1`, `2130706433`. These count as local, and the hosted scanner refuses them. Task 1 (table) and Task 4 (`checkTarget`) test this.
 
 ---
 
@@ -45,10 +45,10 @@
 - Create: `packages/core/src/net/address.test.ts`
 - Modify: `packages/core/package.json` (dependency and subpath exports)
 - Modify: `packages/core/src/index.ts`
-- Modify: `packages/cli/package.json` (dependency, since the CLI bundle externalises listed deps)
+- Modify: `packages/cli/package.json` (dependency, because the CLI bundle does not include the listed dependencies)
 
 **Interfaces:**
-- Produces: `isPublicAddress(ip: string): boolean`, `isLocalTarget(hostname: string): boolean`; subpath exports `@legal-lint/core/address`, `@legal-lint/core/crawler`, `@legal-lint/core/remote` (the last file arrives in Task 2), so the API bundle does not pull in the TypeScript compiler.
+- Produces: `isPublicAddress(ip: string): boolean`, `isLocalTarget(hostname: string): boolean`; subpath exports `@legal-lint/core/address`, `@legal-lint/core/crawler`, `@legal-lint/core/remote` (Task 2 adds the last file). Thus the API bundle does not include the TypeScript compiler.
 
 - [x] **Step 1: Add the dependency and subpath exports**
 
@@ -57,7 +57,7 @@ pnpm --filter @legal-lint/core add ipaddr.js@2.5.0
 pnpm --filter legal-lint add ipaddr.js@2.5.0
 ```
 
-Edit `packages/core/package.json` `exports` to:
+Change the `exports` of `packages/core/package.json` to:
 
 ```json
   "exports": {
@@ -68,7 +68,7 @@ Edit `packages/core/package.json` `exports` to:
   },
 ```
 
-- [x] **Step 2: Write the failing test**
+- [x] **Step 2: Write the test that fails**
 
 `packages/core/src/net/address.test.ts`:
 
@@ -139,12 +139,12 @@ describe('isLocalTarget', () => {
 });
 ```
 
-- [x] **Step 3: Run it to see it fail**
+- [x] **Step 3: Run the test and make sure that it fails**
 
 Run: `pnpm vitest run packages/core/src/net/address.test.ts`
-Expected: FAIL, cannot find `./address.ts`.
+Expected: FAIL. The test cannot find `./address.ts`.
 
-- [x] **Step 4: Implement**
+- [x] **Step 4: Write the code**
 
 `packages/core/src/net/address.ts`:
 
@@ -194,7 +194,7 @@ export { isLocalTarget, isPublicAddress } from './net/address.ts';
 - [x] **Step 5: Run the tests**
 
 Run: `pnpm vitest run packages/core/src/net/address.test.ts`
-Expected: PASS. If a row fails, check what `ipaddr.js` returns for it (`node -e "console.log(require('ipaddr.js').parse('…').range())"` from `packages/core`). Fix the classifier, not the table.
+Expected: PASS. If a row fails, find what `ipaddr.js` returns for it (`node -e "console.log(require('ipaddr.js').parse('…').range())"` from `packages/core`). Correct the classifier, not the table.
 
 - [x] **Step 6: Commit**
 
@@ -205,7 +205,7 @@ git commit -m "feat(core): classify public and local addresses for the hosted sc
 
 ---
 
-### Task 2: Wire format, crawl budget, and refusing a key in project config
+### Task 2: Wire format, crawl budget, and refusal of a key in the project config
 
 **Files:**
 - Create: `packages/core/src/remote.ts`
@@ -213,13 +213,13 @@ git commit -m "feat(core): classify public and local addresses for the hosted sc
 - Modify: `packages/core/src/runtime/crawler.ts` (`budgetMs`)
 - Modify: `packages/core/src/schemas.ts:93` (`licenceKey`)
 - Modify: `packages/core/src/index.ts`
-- Test: `packages/core/src/engine.test.ts` (config refusal)
+- Test: `packages/core/src/engine.test.ts` (refusal of the config)
 
 **Interfaces:**
 - Consumes: `SiteCapture` from `packages/core/src/types.ts`.
 - Produces: `siteCaptureSchema`, `licenceRequestSchema`, `licenceResponseSchema`, `scanRequestSchema`, `scanResponseSchema`, `apiErrorSchema`, `API_ERROR_REASONS`, and types `LicenceResponse`, `ApiErrorReason`. `CaptureOptions.budgetMs?: number`.
 
-- [x] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the tests that fail**
 
 `packages/core/src/remote.test.ts`:
 
@@ -271,7 +271,7 @@ describe('wire format', () => {
 });
 ```
 
-Append to `packages/core/src/engine.test.ts` (it already imports from `vitest`; add any missing imports such as `mkdtemp`, `writeFile`, `tmpdir`, `path`, `loadConfig`, `ConfigError` at the top):
+Add to the end of `packages/core/src/engine.test.ts`. The file already imports from `vitest`. Add the missing imports at the top, for example `mkdtemp`, `writeFile`, `tmpdir`, `path`, `loadConfig`, `ConfigError`:
 
 ```ts
 describe('licenceKey in the project config', () => {
@@ -284,12 +284,12 @@ describe('licenceKey in the project config', () => {
 });
 ```
 
-- [x] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run the tests and make sure that they fail**
 
 Run: `pnpm vitest run packages/core/src/remote.test.ts packages/core/src/engine.test.ts`
-Expected: FAIL, `remote.ts` is missing and `licenceKey` is accepted.
+Expected: FAIL. `remote.ts` is missing, and the schema accepts `licenceKey`.
 
-- [x] **Step 3: Implement**
+- [x] **Step 3: Write the code**
 
 `packages/core/src/remote.ts`:
 
@@ -362,14 +362,14 @@ In `packages/core/src/schemas.ts`, replace `licenceKey: z.string().optional(),` 
     .optional(),
 ```
 
-In `packages/core/src/runtime/crawler.ts`, add to `CaptureOptions`:
+In `packages/core/src/runtime/crawler.ts`, add this to `CaptureOptions`:
 
 ```ts
   /** Stop starting new pages once this many milliseconds have passed since the crawl began. The hosted API uses it to cap a scan's cost. */
   budgetMs?: number;
 ```
 
-and change the follow loop in `captureSite`:
+Then change the follow loop in `captureSite`:
 
 ```ts
     const started = Date.now();
@@ -402,7 +402,7 @@ export {
 - [x] **Step 4: Run the tests and the typecheck**
 
 Run: `pnpm vitest run packages/core && pnpm typecheck`
-Expected: PASS. If `z.never({ error })` does not produce the message in zod 4.6.5, use `z.unknown().refine(() => false, { message: '…' }).optional()` and say so in DECISIONS.md.
+Expected: PASS. If `z.never({ error })` does not give the message in zod 4.6.5, use `z.unknown().refine(() => false, { message: '…' }).optional()`. Write this in DECISIONS.md.
 
 - [x] **Step 5: Commit**
 
@@ -418,7 +418,7 @@ git commit -m "feat(core): add the API wire format, a crawl time budget, and ref
 **Files:**
 - Create: `packages/api/package.json`, `packages/api/tsup.config.ts`
 - Create: `packages/api/src/keys.ts`, `packages/api/src/store.ts`, `packages/api/src/limits.ts`
-- Create: `packages/api/src/store-contract.ts` (shared store tests, reused by the Firestore store in Task 7; not a `.test.ts` file, so it never runs on its own)
+- Create: `packages/api/src/store-contract.ts` (shared store tests. The Firestore store in Task 7 also uses them. It is not a `.test.ts` file, thus it never runs alone.)
 - Test: `packages/api/src/keys.test.ts`, `packages/api/src/store.test.ts`, `packages/api/src/limits.test.ts`
 
 **Interfaces:**
@@ -435,7 +435,7 @@ git commit -m "feat(core): add the API wire format, a crawl time budget, and ref
   - `class ScanQueue { constructor(maxRunning: number, maxWaiting: number); run<T>(fn: () => Promise<T>): Promise<T> }`, `class BusyError`
   - `clientIp(forwardedFor: string | undefined, trustedHops: number): string`
 
-- [x] **Step 1: Scaffold the package**
+- [x] **Step 1: Make the basic files of the package**
 
 `packages/api/package.json`:
 
@@ -487,9 +487,9 @@ export default defineConfig({
 ```
 
 Run: `pnpm install`
-Expected: the lockfile gains `packages/api`.
+Expected: the lockfile now contains `packages/api`.
 
-- [x] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the tests that fail**
 
 `packages/api/src/keys.test.ts`:
 
@@ -667,12 +667,12 @@ describe('clientIp', () => {
 });
 ```
 
-- [x] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run the tests and make sure that they fail**
 
 Run: `pnpm vitest run packages/api`
-Expected: FAIL, the modules are missing.
+Expected: FAIL. The modules are missing.
 
-- [x] **Step 4: Implement**
+- [x] **Step 4: Write the code**
 
 `packages/api/src/keys.ts`:
 
@@ -930,7 +930,7 @@ git commit -m "feat(api): add licence keys stored as hashes, scan usage limits a
   - `checkTarget(url: string, policy, resolve): Promise<{ ok: true; url: string } | { ok: false; reason: 'bad_url' | 'private_address'; message: string }>`
   - `startEgressProxy({ policy, resolve }): Promise<EgressProxy>` where `interface EgressProxy { url: string; refused: string[]; close(): Promise<void> }`
 
-- [x] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the tests that fail**
 
 `packages/api/src/egress/target.test.ts`:
 
@@ -993,7 +993,7 @@ describe('checkTarget with the production policy', () => {
 });
 ```
 
-Note: `localhost` is not in `dns`, so the refusal must come from `isLocalTarget`, not from the resolver. Implement it that way.
+Note: `localhost` is not in `dns`. Thus the refusal must come from `isLocalTarget`, not from the resolver. Write the code in this way.
 
 `packages/api/src/egress/proxy.test.ts`:
 
@@ -1080,12 +1080,12 @@ describe('egress proxy', () => {
 });
 ```
 
-- [x] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run the tests and make sure that they fail**
 
 Run: `pnpm vitest run packages/api/src/egress`
-Expected: FAIL, the modules are missing.
+Expected: FAIL. The modules are missing.
 
-- [x] **Step 3: Implement**
+- [x] **Step 3: Write the code**
 
 `packages/api/src/egress/target.ts`:
 
@@ -1320,7 +1320,7 @@ export async function startEgressProxy(opts: { policy: TargetPolicy; resolve: Re
 - [x] **Step 4: Run the tests**
 
 Run: `pnpm vitest run packages/api/src/egress && pnpm typecheck`
-Expected: PASS. If the `::1` listener fails on this machine, stop and report it rather than switching the internal server to 127.0.0.1. The test depends on the two servers being on different addresses.
+Expected: PASS. If the `::1` listener fails on this machine, stop and report it. Do not move the internal server to 127.0.0.1. The test needs the two servers on different addresses.
 
 - [x] **Step 5: Commit**
 
@@ -1331,7 +1331,7 @@ git commit -m "feat(api): refuse private targets at input and in an egress proxy
 
 ---
 
-### Task 5: Scanner (Chromium behind the proxy) and browser SSRF tests
+### Task 5: Scanner (Chromium behind the proxy) and SSRF tests in the browser
 
 **Files:**
 - Create: `packages/api/src/scan.ts`
@@ -1341,7 +1341,7 @@ git commit -m "feat(api): refuse private targets at input and in an egress proxy
 - Consumes: `startEgressProxy`, `TargetPolicy`, `Resolver` (Task 4); `captureSite` from `@legal-lint/core/crawler`.
 - Produces: `interface Scanner { scan(url: string): Promise<SiteCapture>; close(): Promise<void>; proxy: EgressProxy }`, `createScanner(opts: { policy: TargetPolicy; resolve: Resolver; toolVersion: string; pageTimeoutMs?: number; budgetMs?: number }): Promise<Scanner>`, `CHROMIUM_ARGS: string[]`.
 
-- [x] **Step 1: Write the failing test**
+- [x] **Step 1: Write the test that fails**
 
 `tests/egress.test.ts`:
 
@@ -1468,12 +1468,12 @@ describe('hosted scanner egress', () => {
 });
 ```
 
-- [x] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `pnpm vitest run tests/egress.test.ts`
-Expected: FAIL, `scan.ts` is missing.
+Expected: FAIL. `scan.ts` is missing.
 
-- [x] **Step 3: Implement**
+- [x] **Step 3: Write the code**
 
 `packages/api/src/scan.ts`:
 
@@ -1546,12 +1546,12 @@ export async function createScanner(opts: {
 - [x] **Step 4: Run the test**
 
 Run: `pnpm vitest run tests/egress.test.ts`
-Expected: PASS. If `/ws` reports zero refusals, check whether Chromium sent it as CONNECT or as an upgrade. Either way the internal hit count must stay 0; if it doesn't, stop and report.
+Expected: PASS. If `/ws` reports zero refusals, find if Chromium sent it as CONNECT or as an upgrade. In the two cases, the count of hits on the internal server must stay 0. If it does not stay 0, stop and report.
 
-- [x] **Step 5: Run it five times to check for flakiness**
+- [x] **Step 5: Run the test five times to find tests that are not stable**
 
 Run: `for i in 1 2 3 4 5; do pnpm vitest run tests/egress.test.ts || break; done`
-Expected: 5 passes. Record any flake in the milestone report.
+Expected: 5 passes. Record each unstable result in the milestone report.
 
 - [x] **Step 6: Commit**
 
@@ -1577,7 +1577,7 @@ git commit -m "feat(api): run Chromium behind the egress proxy and prove interna
   - `interface AppDeps { keys: KeyStore; usage: UsageStore; scanner: { scan(url: string): Promise<SiteCapture> }; policy: TargetPolicy; resolve: Resolver; config: ApiConfig; now?: () => Date; log?: (e: LogEntry) => void }`
   - `createApp(deps: AppDeps): Hono`
 
-- [x] **Step 1: Write the failing test**
+- [x] **Step 1: Write the test that fails**
 
 `packages/api/src/app.test.ts`:
 
@@ -1752,12 +1752,12 @@ describe('POST /v1/scan', () => {
 });
 ```
 
-- [x] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `pnpm vitest run packages/api/src/app.test.ts`
-Expected: FAIL, `app.ts` is missing.
+Expected: FAIL. `app.ts` is missing.
 
-- [x] **Step 3: Implement**
+- [x] **Step 3: Write the code**
 
 `packages/api/src/config.ts`:
 
@@ -1936,7 +1936,7 @@ export function createApp(deps: AppDeps): Hono {
 - [x] **Step 4: Run the tests**
 
 Run: `pnpm vitest run packages/api && pnpm typecheck`
-Expected: PASS. If Hono's `c.json(data, status, headers)` overload rejects `{}` as headers, pass `undefined` instead.
+Expected: PASS. If the `c.json(data, status, headers)` overload of Hono refuses `{}` as headers, use `undefined`.
 
 - [x] **Step 5: Commit**
 
@@ -1959,9 +1959,9 @@ git commit -m "feat(api): add licence and scan endpoints with per-key, per-IP an
 
 **Interfaces:**
 - Consumes: Tasks 3 to 6.
-- Produces: `class FirestoreStore implements KeyStore, UsageStore` (constructor takes a `Firestore`); `admin(argv: string[], store: KeyStore, out: (s: string) => void, now?: Date): Promise<number>`.
+- Produces: `class FirestoreStore implements KeyStore, UsageStore` (the constructor accepts a `Firestore`); `admin(argv: string[], store: KeyStore, out: (s: string) => void, now?: Date): Promise<number>`.
 
-- [x] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the tests that fail**
 
 `packages/api/src/firestore-store.test.ts`:
 
@@ -2066,12 +2066,12 @@ describe('deploy files', () => {
 });
 ```
 
-- [x] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run the tests and make sure that they fail**
 
 Run: `pnpm vitest run packages/api`
-Expected: FAIL (missing modules and files). The Firestore contract test is skipped.
+Expected: FAIL (modules and files are missing). The Firestore contract test does not run.
 
-- [x] **Step 3: Implement the store, admin and server**
+- [x] **Step 3: Write the store, the admin script and the server**
 
 `packages/api/src/firestore-store.ts`:
 
@@ -2256,7 +2256,7 @@ EXPOSE 8080
 CMD ["node", "dist/server.js"]
 ```
 
-Repo-root `.dockerignore` and `.gcloudignore` (same content):
+`.dockerignore` and `.gcloudignore` at the repo root (the same content):
 
 ```
 .git
@@ -2289,7 +2289,7 @@ images: ['${_IMAGE}']
 ]
 ```
 
-`packages/api/deploy.sh` (then `chmod +x packages/api/deploy.sh`):
+`packages/api/deploy.sh` (then run `chmod +x packages/api/deploy.sh`):
 
 ```bash
 #!/usr/bin/env bash
@@ -2322,52 +2322,52 @@ gcloud run deploy "$SERVICE" \
   --allow-unauthenticated
 ```
 
-`packages/api/DEPLOY.md` has these sections, each with the exact commands:
+`packages/api/DEPLOY.md` has these sections. Each section has the exact commands:
 
-1. **Before anything: a $1 budget alert.** Console → Billing → Budgets & alerts → Create budget. Set the amount to $1 and alert thresholds at 50%, 90% and 100%. The alert only sends email. The real limits are max 1 instance and `SCANS_PER_MONTH`.
-2. **One-time setup:**
+1. **First: a $1 budget alert.** Console → Billing → Budgets & alerts → Create budget. Set the amount to $1 and the alert thresholds to 50%, 90% and 100%. The alert only sends email. The real limits are a maximum of 1 instance and `SCANS_PER_MONTH`.
+2. **Setup (one time):**
    - Install gcloud.
-   - `gcloud auth login`, then `gcloud projects create <id>` and link billing.
+   - `gcloud auth login`, then `gcloud projects create <id>`, and connect the billing account.
    - `gcloud config set project <id>`.
    - `gcloud services enable run.googleapis.com firestore.googleapis.com artifactregistry.googleapis.com cloudbuild.googleapis.com`.
-   - `gcloud firestore databases create --location=us-central1` (the default database; the free quota applies only to it).
+   - `gcloud firestore databases create --location=us-central1` (the default database. The free quota applies only to it.)
    - `gcloud artifacts repositories create legal-lint --repository-format=docker --location=us-central1`.
    - `gcloud artifacts repositories set-cleanup-policies legal-lint --location=us-central1 --policy=packages/api/cleanup-policy.json --no-dry-run`.
    - `gcloud iam service-accounts create legal-lint-api`.
    - `gcloud projects add-iam-policy-binding <id> --member=serviceAccount:legal-lint-api@<id>.iam.gserviceaccount.com --role=roles/datastore.user`.
-3. **Deploy:** `PROJECT=<id> ./packages/api/deploy.sh`. Note the service URL, then `curl <url>/healthz`.
+3. **Deploy:** `PROJECT=<id> ./packages/api/deploy.sh`. Write down the URL of the service. Then run `curl <url>/healthz`.
 4. **Issue your first key:**
    - `gcloud auth application-default login`.
    - `pnpm --filter @legal-lint/api build`.
    - `GOOGLE_CLOUD_PROJECT=<id> node packages/api/dist/admin.js issue --label you@example.com`.
-   - Also `list`, and `revoke <prefix>`.
-5. **Point the CLI at it:** `LEGAL_LINT_API_URL=<url> legal-lint activate <key>`. Then send the URL to the developer so it becomes the default in `packages/cli/src/licence/api.ts`.
-6. **Find the client-IP header layout (once):**
+   - Also `list` and `revoke <prefix>`.
+5. **Connect the CLI to the API:** `LEGAL_LINT_API_URL=<url> legal-lint activate <key>`. Then send the URL to the developer. The developer makes it the default in `packages/cli/src/licence/api.ts`.
+6. **Find the layout of the client IP header (one time):**
    - `gcloud run services update legal-lint-api --region us-central1 --update-env-vars LOG_FORWARDED_FOR=1`.
    - Call `/v1/licence` from your laptop.
-   - Compare the logged `forwardedFor` with `curl -s https://ifconfig.me`.
-   - Set `TRUSTED_PROXY_HOPS` so the chosen entry is your address.
-   - Remove `LOG_FORWARDED_FOR` again: it logs IP addresses.
-7. **Check what can still cost money:**
-   - Image size: `gcloud artifacts docker images list us-central1-docker.pkg.dev/<id>/legal-lint --include-tags`. Free up to 0.5 GB, then about $0.10/GB per month.
-   - Cloud Build minutes and outbound traffic against their free allowances on the billing page.
-   - Usage this month: the `usage/month_<yyyy-mm>` document in the Firestore console.
-8. **Changing limits:** `gcloud run services update … --update-env-vars SCANS_PER_MONTH=…`. List every variable from `config.ts` with its default.
-9. **Testing the Firestore store:**
+   - Compare the `forwardedFor` value in the log with `curl -s https://ifconfig.me`.
+   - Set `TRUSTED_PROXY_HOPS` so that the selected entry is your address.
+   - Remove `LOG_FORWARDED_FOR` again, because it logs IP addresses.
+7. **Examine the items that can still cost money:**
+   - Image size: `gcloud artifacts docker images list us-central1-docker.pkg.dev/<id>/legal-lint --include-tags`. Free up to 0.5 GB. After that, approximately $0.10/GB each month.
+   - Compare the Cloud Build minutes and the outbound traffic with their free allowances on the billing page.
+   - Usage in this month: the `usage/month_<yyyy-mm>` document in the Firestore console.
+8. **Change the limits:** `gcloud run services update … --update-env-vars SCANS_PER_MONTH=…`. List each variable from `config.ts` with its default.
+9. **Test the Firestore store:**
    - `npx firebase-tools emulators:start --only firestore` (needs Java).
    - Then `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 pnpm vitest run packages/api/src/firestore-store.test.ts`.
 
-Add to the root `package.json` scripts: `"build:api": "pnpm --filter @legal-lint/api build"`.
+Add this to the scripts of the root `package.json`: `"build:api": "pnpm --filter @legal-lint/api build"`.
 
 - [x] **Step 5: Run the tests and the bundle**
 
 Run: `pnpm vitest run packages/api && pnpm typecheck && pnpm build:api && ls -la packages/api/dist`
-Expected: tests PASS (Firestore contract skipped); `dist/server.js` and `dist/admin.js` exist. Check the bundle does not contain the TypeScript compiler: `! grep -q "createSourceFile" packages/api/dist/server.js`.
+Expected: the tests PASS (the Firestore contract does not run). `dist/server.js` and `dist/admin.js` exist. Make sure that the bundle does not contain the TypeScript compiler: `! grep -q "createSourceFile" packages/api/dist/server.js`.
 
-- [x] **Step 6: Try the Firestore emulator if it can run here**
+- [x] **Step 6: Try the Firestore emulator if it can run on this machine**
 
-Run: `java -version && npx -y firebase-tools@latest emulators:start --only firestore --project legal-lint-test` in the background, then `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 pnpm vitest run packages/api/src/firestore-store.test.ts`, then stop the emulator.
-Expected: PASS. If the emulator cannot start (download blocked, no Java), record that the Firestore contract was not run. Do not mark it as tested.
+Run `java -version && npx -y firebase-tools@latest emulators:start --only firestore --project legal-lint-test` in the background. Then run `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 pnpm vitest run packages/api/src/firestore-store.test.ts`. Then stop the emulator.
+Expected: PASS. If the emulator cannot start (the download is blocked, or there is no Java), record that the Firestore contract did not run. Do not mark it as tested.
 
 - [x] **Step 7: Commit**
 
@@ -2378,7 +2378,7 @@ git commit -m "feat(api): add the Firestore store, server entry, key admin scrip
 
 ---
 
-### Task 8: CLI licence module and licensed test setup
+### Task 8: CLI licence module and test setup with a licence
 
 **Files:**
 - Create: `packages/cli/src/licence/store.ts`, `packages/cli/src/licence/api.ts`, `packages/cli/src/licence/gate.ts`
@@ -2395,7 +2395,7 @@ git commit -m "feat(api): add the Firestore store, server entry, key admin scrip
   - `CACHE_MS`, `GRACE_MS`, `class LicenceError extends Error`, `interface Licence { key: string; source: 'env' | 'file'; checkedAt: string; expiresAt: string | null; warning?: string }`, `checkLicence(rt, version): Promise<Licence>`, `activate(rt, key, version): Promise<{ file: string; expiresAt: string | null }>`
   - Test helpers: `TEST_KEY`, `makeHome(opts?: { key?: string; checkedAt?: Date | null; expiresAt?: string | null; cacheKey?: string }): Promise<string>`, `fakeFetch(handler: (url: string, body: unknown) => Response | Promise<Response>): typeof fetch & { calls: { url: string; body: unknown }[] }`
 
-- [x] **Step 1: Write the helpers and the failing test**
+- [x] **Step 1: Write the helpers and the test that fails**
 
 `tests/helpers/licence.ts`:
 
@@ -2460,7 +2460,7 @@ process.env.LEGAL_LINT_API_URL = 'http://127.0.0.1:9';
 delete process.env.LEGAL_LINT_KEY;
 ```
 
-In `vitest.config.ts` add `setupFiles: ['tests/setup/licence.ts'],` inside `test`.
+In `vitest.config.ts`, add `setupFiles: ['tests/setup/licence.ts'],` in `test`.
 
 `tests/licence.test.ts`:
 
@@ -2590,12 +2590,12 @@ describe('activate', () => {
 });
 ```
 
-- [x] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `pnpm vitest run tests/licence.test.ts`
-Expected: FAIL, the licence modules are missing.
+Expected: FAIL. The licence modules are missing.
 
-- [x] **Step 3: Implement**
+- [x] **Step 3: Write the code**
 
 `packages/cli/src/licence/store.ts`:
 
@@ -2831,10 +2831,10 @@ export async function activate(rt: RuntimeEnv, rawKey: string, version: string):
 }
 ```
 
-- [x] **Step 4: Run the new tests and the whole suite**
+- [x] **Step 4: Run the new tests and the full suite**
 
 Run: `pnpm vitest run tests/licence.test.ts && pnpm test && pnpm typecheck`
-Expected: PASS. Nothing is gated yet, so the existing tests are unaffected by the setup file.
+Expected: PASS. No command has a gate at this time. Thus the setup file does not change the tests that exist.
 
 - [x] **Step 5: Commit**
 
@@ -2845,7 +2845,7 @@ git commit -m "feat(cli): add licence key lookup, a 24-hour cache with 7-day off
 
 ---
 
-### Task 9: Gate the CLI, add activate and licence, and choose local or remote URL scans
+### Task 9: Add the gate to the CLI, add activate and licence, and select local or remote URL scans
 
 **Files:**
 - Create: `packages/cli/src/scan-url.ts`
@@ -2860,7 +2860,7 @@ git commit -m "feat(cli): add licence key lookup, a 24-hour cache with 7-day off
   - `interface UrlScanOptions { rt: RuntimeEnv; licence: Licence; version: string; local?: boolean; only?: readonly string[]; timeoutMs?: number; intake?: Intake | null; judgments?: StoredJudgments; capture?: Omit<CaptureOptions, 'toolVersion'> }`
   - `scanUrl(url: string, opts: UrlScanOptions): Promise<ScanReport>`
 
-- [x] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the tests that fail**
 
 `tests/licence-cli.test.ts`:
 
@@ -3008,12 +3008,12 @@ describe('scanUrl remote', () => {
 });
 ```
 
-- [x] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run the tests and make sure that they fail**
 
 Run: `pnpm vitest run tests/licence-cli.test.ts tests/scan-url.test.ts`
-Expected: FAIL (`scan-url.ts` missing; `run` ignores `rt`; no `activate`/`licence` commands).
+Expected: FAIL (`scan-url.ts` is missing; `run` ignores `rt`; there are no `activate`/`licence` commands).
 
-- [x] **Step 3: Implement `scan-url.ts`**
+- [x] **Step 3: Write `scan-url.ts`**
 
 `packages/cli/src/scan-url.ts`:
 
@@ -3059,7 +3059,7 @@ export async function scanUrl(url: string, opts: UrlScanOptions): Promise<ScanRe
 }
 ```
 
-- [x] **Step 4: Wire `program.ts`**
+- [x] **Step 4: Connect `program.ts`**
 
 Changes to `packages/cli/src/program.ts`:
 
@@ -3071,7 +3071,7 @@ import { defaultRuntime, homeDir, maskKey, type RuntimeEnv } from './licence/sto
 import { scanUrl } from './scan-url.ts';
 ```
 
-2. `buildProgram(io, setExit, rt: RuntimeEnv)`. Add near the top:
+2. `buildProgram(io, setExit, rt: RuntimeEnv)`. Add this near the top:
 
 ```ts
   // No free tier: scans run only with a valid key. A grace-period warning goes to stderr so --json stays parseable.
@@ -3082,12 +3082,12 @@ import { scanUrl } from './scan-url.ts';
   };
 ```
 
-3. `scan` action: first line `await gate();`.
+3. `scan` action: the first line is `await gate();`.
 
 4. `scan-url`:
    - Add `.option('--local', 'load the page with Chromium on this machine instead of the hosted scanner (localhost and private addresses always are)')`.
    - Change the `--timeout` description to `'page load timeout in milliseconds (local scans)'`.
-   - Action body after URL validation:
+   - The action body after the URL validation:
 
 ```ts
       const licence = await gate();
@@ -3102,7 +3102,7 @@ import { scanUrl } from './scan-url.ts';
       setExit(await output(report, opts, process.cwd(), io));
 ```
 
-   and type `opts` as `OutputOptions & { rule?: string[]; timeout: number; local?: boolean }`.
+   and give `opts` the type `OutputOptions & { rule?: string[]; timeout: number; local?: boolean }`.
 
 5. New commands, before `mcp`:
 
@@ -3133,14 +3133,14 @@ import { scanUrl } from './scan-url.ts';
     });
 ```
 
-6. `run(argv, io = process, rt: RuntimeEnv = defaultRuntime())` passes `rt` to `buildProgram`.
+6. `run(argv, io = process, rt: RuntimeEnv = defaultRuntime())` gives `rt` to `buildProgram`.
 
-`LicenceError` and `RemoteScanError` reach the existing catch in `run()`, which prints `legal-lint: <message>` and returns `EXIT.error`. No special case is needed.
+`LicenceError` and `RemoteScanError` go to the catch that exists in `run()`. It shows `legal-lint: <message>` and returns `EXIT.error`. No special case is necessary.
 
 - [x] **Step 5: Run the tests**
 
 Run: `pnpm test && pnpm typecheck`
-Expected: PASS. The old CLI and HTML report tests pass because of the licensed setup file.
+Expected: PASS. The old CLI and HTML report tests pass, because the setup file gives them a licence.
 
 - [x] **Step 6: Commit**
 
@@ -3151,7 +3151,7 @@ git commit -m "feat(cli): require a licence key for scans, add activate and lice
 
 ---
 
-### Task 10: Gate the MCP server
+### Task 10: Add the gate to the MCP server
 
 **Files:**
 - Modify: `packages/cli/src/mcp/server.ts`
@@ -3159,9 +3159,9 @@ git commit -m "feat(cli): require a licence key for scans, add activate and lice
 
 **Interfaces:**
 - Consumes: `checkLicence`, `defaultRuntime`, `scanUrl`.
-- Produces: `ServerOptions.runtime?: RuntimeEnv`; `scan_url` input gains `local?: boolean`.
+- Produces: `ServerOptions.runtime?: RuntimeEnv`; the `scan_url` input gets `local?: boolean`.
 
-- [x] **Step 1: Write the failing test**
+- [x] **Step 1: Write the test that fails**
 
 `tests/mcp-licence.test.ts`:
 
@@ -3242,12 +3242,12 @@ describe('MCP server with a key', () => {
 });
 ```
 
-- [x] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run the test and make sure that it fails**
 
 Run: `pnpm vitest run tests/mcp-licence.test.ts`
-Expected: FAIL, the tools run without a key.
+Expected: FAIL. The tools run without a key.
 
-- [x] **Step 3: Implement**
+- [x] **Step 3: Write the code**
 
 In `packages/cli/src/mcp/server.ts`:
 
@@ -3275,7 +3275,7 @@ import { scanUrl } from '../scan-url.ts';
   };
 ```
 
-4. Make the first statement of every tool handler `await requireLicence();`. In `scan_url`, write `const licence = await requireLicence();` and replace the `scanSite(...)` call with:
+4. Make `await requireLicence();` the first statement of each tool handler. In `scan_url`, write `const licence = await requireLicence();`. Replace the `scanSite(...)` call with:
 
 ```ts
       const report = await scanUrl(parsed.href, {
@@ -3305,14 +3305,14 @@ import { scanUrl } from '../scan-url.ts';
 'Loads a live or preview URL in headless Chromium and reports what happens before any click: requests to Google Fonts, session replay recording, subscription prices without renewal terms. Public URLs are loaded by the Legal Lint hosted scanner (only the URL is sent); localhost and private addresses load on this machine and need Playwright. '
 ```
 
-   Keep the rest of the description.
+   Keep the remaining text of the description.
 
 7. Add one line to `INSTRUCTIONS`: `- Every tool needs a licence key. If a tool says one is missing, tell the user to set LEGAL_LINT_KEY or run \`legal-lint activate <key>\`.`
 
 - [x] **Step 4: Run the tests**
 
 Run: `pnpm test && pnpm typecheck`
-Expected: PASS, including the existing `tests/mcp.test.ts` (licensed via the setup file; its scan_url tests use 127.0.0.1, so they stay local) and `tests/mcp-stdio.test.ts` (the child inherits `LEGAL_LINT_HOME`).
+Expected: PASS. This includes the `tests/mcp.test.ts` that exists (the setup file gives it a licence. Its scan_url tests use 127.0.0.1, thus they stay local) and `tests/mcp-stdio.test.ts` (the child process gets `LEGAL_LINT_HOME`).
 
 - [x] **Step 5: Commit**
 
@@ -3410,7 +3410,7 @@ describe('remote URL scan, end to end', () => {
 });
 ```
 
-If the first run shows that an unresolved request is not recorded by Chromium, stop and report: the remote scan would then miss third-party requests. Do not loosen the comparison.
+If the first run shows that Chromium does not record a request that did not resolve, stop and report. In that condition, the remote scan would not find third-party requests. Do not make the comparison less strict.
 
 - [x] **Step 2: Add the privacy tests**
 
@@ -3424,7 +3424,7 @@ import { run } from '../packages/cli/src/program.ts';
 import { makeHome, TEST_KEY } from './helpers/licence.ts';
 ```
 
-3. Add inside `describe('privacy', …)`:
+3. Add in `describe('privacy', …)`:
 
 ```ts
   async function cliScan(root: string, home: string) {
@@ -3452,7 +3452,7 @@ import { makeHome, TEST_KEY } from './helpers/licence.ts';
   });
 ```
 
-If the recorded fetch payload has no `body` (for example because `AbortSignal` does not serialise), parse `outbound[0].payload` once to see its shape and adjust only the extraction line. The assertion on the body must stay exact.
+If the recorded fetch payload has no `body` (for example, because `AbortSignal` does not serialise), parse `outbound[0].payload` one time to see its shape. Then change only the extraction line. The assertion on the body must stay exact.
 
 - [x] **Step 3: Run the tests**
 
@@ -3476,56 +3476,56 @@ git commit -m "test: prove remote URL scans match local ones and the licence che
 - [x] **Step 1: README**
 
 - Status line: `Status: phase 1, milestone 5. Rules LL-01 to LL-05, the CLI, the HTML report, the MCP server, licence keys and the hosted scanner are implemented. Batch URL scans (milestone 3) were skipped for now.`
-- New section **Licence key** after Usage:
-  - `legal-lint activate <key>` saves the key to `~/.legal-lint/key`. `LEGAL_LINT_KEY` overrides it, which suits CI.
-  - `legal-lint licence` shows which key is in use and when it was last checked.
-  - Without a key, `scan`, `scan-url` and the MCP tools stop with directions; `init`, `--help` and `--version` work.
-  - The key is checked at most once a day. If the server can't be reached, Legal Lint keeps working for 7 days after the last successful check.
-  - Never put the key in `legal-lint.config.json`, which is committed.
+- A new section **Licence key** after Usage:
+  - `legal-lint activate <key>` keeps the key in `~/.legal-lint/key`. `LEGAL_LINT_KEY` overrides it. This is good for CI.
+  - `legal-lint licence` shows the key in use and the time of the last check.
+  - Without a key, `scan`, `scan-url` and the MCP tools stop and tell the user what to do. `init`, `--help` and `--version` operate.
+  - The tool checks the key a maximum of one time each day. If it cannot connect to the server, Legal Lint continues to operate for 7 days after the last good check.
+  - Never put the key in `legal-lint.config.json`, because that file is committed.
 - Usage: add `activate` and `licence` to the command block, and `--local` to the `scan-url` notes. The Playwright line becomes "Only needed for `--local` and for localhost or private addresses."
 - Replace **What leaves your machine** with:
-  - `scan` reads your repository locally. The only network call is the licence check, at most once a day, which sends your licence key and the Legal Lint version. A test intercepts every outbound call during a scan and fails if anything else is sent.
-  - `scan-url` on a public URL sends the URL (with your key and the version) to the Legal Lint scanner, which loads the page in its own browser and sends back what it recorded. Your intake answers and judgments stay on your machine; the rules run here. The scanner logs the key's first 8 characters, the site's host, the outcome and the duration, not the full URL.
+  - `scan` reads your repository locally. The only network call is the licence check. It occurs a maximum of one time each day, and sends your licence key and the Legal Lint version. A test stops each outbound call during a scan. The test fails if the scan sends other data.
+  - `scan-url` on a public URL sends the URL (with your key and the version) to the Legal Lint scanner. The scanner loads the page in its own browser and sends back the data that it recorded. Your intake answers and judgments stay on your machine. The rules run on your machine. The scanner logs the first 8 characters of the key, the host of the site, the outcome and the duration. It does not log the full URL.
   - `scan-url` on localhost or a private address, or with `--local`, runs Chromium on your machine and sends nothing to us.
   - The MCP server runs on your machine and uses the same paths.
   - HTML reports stay in your project folder.
-- Development: add `pnpm build:api`. Add a line pointing at `packages/api/DEPLOY.md` for the hosted service.
+- Development: add `pnpm build:api`. Add a line that refers to `packages/api/DEPLOY.md` for the hosted service.
 
 - [x] **Step 2: DECISIONS.md**
 
-Add a `## Licence and hosted API` section with one line each:
+Add a `## Licence and hosted API` section with one line for each item:
 
-- **The server records and the client judges.** The API returns a raw capture and the CLI runs the rules with local intake and judgments, so only the URL leaves the machine.
-- **Public URLs go to the hosted scanner; localhost and private addresses always run locally, and `--local` forces it.** The hosted scanner refuses private addresses by design.
-- **The key lives in `LEGAL_LINT_KEY` or `~/.legal-lint/key`, never `legal-lint.config.json`**, which is committed. A config that still has `licenceKey` is refused with directions.
-- **24-hour cache, 7-day grace only when the API is unreachable (network, timeout, 5xx, 429).** A definite invalid answer stops the tool at once and clears the cache.
-- **The MCP server starts and lists its tools without a key, and each call returns the licence message,** so the agent can tell the user what to do instead of seeing a broken server.
-- **Google Cloud Run in us-central1 with request-based billing, max 1 instance, 1 vCPU, 2 GiB, plus Firestore's default database.** Chosen over Fly.io (no free tier) and Render (512 MB, ephemeral disk) to stay inside the free quota; the owner adds a card and a $1 budget alert.
-- **A hard cap of 1,500 scans a month for the whole service, and a 40 s budget for starting pages (15 s per page).** Worst case that is half the free compute quota; the budget alert only emails.
-- **Per-IP limits are in memory,** which is correct with one instance. The client IP is the entry `TRUSTED_PROXY_HOPS` from the right of X-Forwarded-For, to be confirmed after the first deploy.
-- **Keys are `ll_` plus 32 base62 characters; Firestore keeps only the SHA-256 and the first 8 characters.** A leaked database does not leak working keys.
-- **A scan counts against the limits when Chromium is about to start, including failed loads.** The compute is spent either way. A refused URL does not count.
-- **SSRF has three layers:** an input check, an in-process egress proxy that resolves names itself and connects to the checked address (defeating DNS rebinding), and Chromium flags plus Playwright's forced `<-loopback>` proxying. Only public unicast addresses on ports 80 and 443 are allowed.
-- **The image is Node slim plus Chromium's headless shell**, aiming to fit Artifact Registry's 0.5 GB free storage. A cleanup policy keeps one image. A test fails if the deploy script loosens the limits or the image's package versions drift from package.json.
-- **The API bundle imports core through subpaths (`@legal-lint/core/crawler`, `/remote`, `/address`)** so it does not pull in the TypeScript compiler.
-- **Tests run licensed by default** through a setup file that writes a fresh cache to a temporary home and points the API URL at a dead port. Gate tests build their own homes.
-- **The Firestore store shares the memory store's contract tests and runs them only under the emulator.** Record here whether they ran in milestone 5.
-- **`DEFAULT_API_URL` is empty until the first deploy.** Until then, `LEGAL_LINT_API_URL` is required for activation and remote scans.
+- **The server records and the client makes the decisions.** The API returns a raw capture. The CLI runs the rules with the local intake and judgments. Thus only the URL goes out of the machine.
+- **Public URLs go to the hosted scanner. Localhost and private addresses always run locally. `--local` makes all scans run locally.** The hosted scanner refuses private addresses by design.
+- **The key is in `LEGAL_LINT_KEY` or `~/.legal-lint/key`. It is never in `legal-lint.config.json`**, because that file is committed. If a config still has `licenceKey`, the tool refuses it and tells the user what to do.
+- **A 24-hour cache. A 7-day grace period only when the tool cannot connect to the API (network, timeout, 5xx, 429).** A clear "invalid" answer stops the tool immediately and clears the cache.
+- **The MCP server starts and lists its tools without a key. Each call returns the licence message.** Thus the agent can tell the user what to do. The agent does not see a server that does not operate.
+- **Google Cloud Run in us-central1 with request-based billing, a maximum of 1 instance, 1 vCPU, 2 GiB, and the default database of Firestore.** We did not select Fly.io (no free tier) or Render (512 MB, a disk that does not keep data), because we want to stay in the free quota. The owner adds a card and a $1 budget alert.
+- **A hard limit of 1,500 scans each month for the full service, and a budget of 40 s to start pages (15 s for each page).** In the worst case, that is half of the free compute quota. The budget alert only sends email.
+- **The limits for each IP address are in memory.** This is correct with one instance. The client IP is the entry at position `TRUSTED_PROXY_HOPS` from the right of X-Forwarded-For. You must confirm this after the first deploy.
+- **Keys are `ll_` and 32 base62 characters. Firestore keeps only the SHA-256 and the first 8 characters.** Thus, if a person gets a copy of the database, they do not get keys that operate.
+- **A scan counts against the limits when Chromium is about to start, also when the load fails.** The compute is used in the two cases. A refused URL does not count.
+- **SSRF has three layers:** an input check; an egress proxy in the process that resolves names itself and connects to the checked address (this prevents DNS rebinding); and Chromium flags with the `<-loopback>` proxy setting that Playwright always adds. Only public unicast addresses on ports 80 and 443 are permitted.
+- **The image is Node slim and the headless shell of Chromium.** The objective is to stay in the free storage of 0.5 GB of Artifact Registry. A cleanup policy keeps one image. A test fails if the deploy script makes the limits larger, or if the package versions of the image are different from package.json.
+- **The API bundle imports core through subpaths (`@legal-lint/core/crawler`, `/remote`, `/address`).** Thus the bundle does not include the TypeScript compiler.
+- **By default, the tests run with a licence.** A setup file writes a new cache to a temporary home. It also sets the API URL to a port where no server runs. The gate tests make their own homes.
+- **The Firestore store uses the same contract tests as the memory store. These tests run only with the emulator.** Record here if they ran in milestone 5.
+- **`DEFAULT_API_URL` is empty until the first deploy.** Until then, activation and remote scans need `LEGAL_LINT_API_URL`.
 
-Also replace the M4 line "No licence check in this milestone. Keyed and keyless MCP tests wait for milestone 5…" with: "**Licence check added in milestone 5;** keyed and keyless MCP tests live in `tests/mcp-licence.test.ts`." And replace "Blocking private addresses belongs to the hosted API (milestone 5)." with "The hosted API blocks private addresses; local scans do not need to."
+Also replace the M4 line "No licence check in this milestone. Keyed and keyless MCP tests wait for milestone 5…" with: "**Licence check added in milestone 5;** keyed and keyless MCP tests live in `tests/mcp-licence.test.ts`." Also replace "Blocking private addresses belongs to the hosted API (milestone 5)." with "The hosted API blocks private addresses; local scans do not need to."
 
 - [x] **Step 3: LEGAL_REVIEW.md**
 
 Add a `## Hosted service (milestone 5)` section:
 
-- **Scanning third-party sites on request.** The hosted scanner loads any public URL a key holder gives it, which may be a site they do not own. Does the service need terms of use, for example limiting scans to sites the user owns or may test, or a robots.txt rule? (Milestone 3, which was to add robots.txt, was skipped.)
-- **Privacy wording.** The README's "What leaves your machine" now describes the licence check and hosted scans. Please confirm it is accurate and sufficient as a privacy notice, and whether a separate privacy policy is needed for the service.
-- **Logs.** The service logs the key prefix, the site host, the outcome and the duration. During setup it can temporarily log X-Forwarded-For (IP addresses). Is a retention period or notice needed?
-- **Messages written by us:** "Legal Lint needs a licence key…", "The hosted scanner has used its scans for this month…", and "… is not a public web address on port 80 or 443, so the hosted scanner will not load it." These contain no legal claims, but are listed for completeness.
+- **Scans of sites that other persons own.** The hosted scanner loads each public URL that a key holder gives it. This can be a site that the key holder does not own. Does the service need terms of use? For example, terms that permit scans only of sites that the user owns or has permission to test, or a robots.txt rule. (We did not do milestone 3, which had the robots.txt support.)
+- **Privacy text.** The section "What leaves your machine" in the README now describes the licence check and the hosted scans. Please confirm that it is correct and sufficient as a privacy notice. Also tell us if the service needs a separate privacy policy.
+- **Logs.** The service logs the key prefix, the host of the site, the outcome and the duration. During setup, it can log X-Forwarded-For (IP addresses) for a short time. Is a retention period or a notice necessary?
+- **Messages that we wrote:** "Legal Lint needs a licence key…", "The hosted scanner has used its scans for this month…", and "… is not a public web address on port 80 or 443, so the hosted scanner will not load it." These messages contain no legal claims. We list them only so that the list is complete.
 
 - [x] **Step 4: Final verification**
 
-Run each and read the output:
+Run each command and read the output:
 
 ```bash
 pnpm test
@@ -3535,7 +3535,7 @@ pnpm build:api
 git status --short
 ```
 
-Expected: all tests pass (the Firestore contract skipped unless the emulator ran); typecheck clean; both bundles build; only intended files changed (`.DS_Store` stays uncommitted). Run the full suite a second time and note any flaky test by name (the known one is LL-03 `fires-runtime-hotjar-websocket`).
+Expected: all tests pass (the Firestore contract does not run if the emulator did not run). The typecheck has no errors. The two bundles build. Only the intended files changed (`.DS_Store` stays uncommitted). Run the full suite a second time. Write the name of each test that is not stable (the known one is LL-03 `fires-runtime-hotjar-websocket`).
 
 - [x] **Step 5: Commit**
 
@@ -3547,10 +3547,10 @@ git commit -m "docs: record milestone 5 decisions, licence usage, what the hoste
 - [ ] **Step 6: Stop and report to the owner**
 
 In simple Hinglish:
-- **What works.**
-- **What was tested,** with test counts.
-- **What did not run:** the Firestore emulator (if it didn't), and no real deploy.
-- **What the owner does next:** follow DEPLOY.md, then send the Cloud Run URL so it can become `DEFAULT_API_URL`.
-- **Open questions,** with numbered yes/no decisions where any remain.
+- **What operates.**
+- **What was tested,** with the test counts.
+- **What did not run:** the Firestore emulator (if it did not run), and no real deploy.
+- **The next work for the owner:** follow DEPLOY.md. Then send the Cloud Run URL, so that it can become `DEFAULT_API_URL`.
+- **Open questions,** with numbered yes/no decisions, if there are some.
 
-Do not start anything else.
+Do not start other work.

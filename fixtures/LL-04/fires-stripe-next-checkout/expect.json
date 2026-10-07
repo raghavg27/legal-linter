@@ -1,0 +1,17 @@
+{
+  "description": "Stripe Checkout in subscription mode behind a bare pricing page: no disclosure, no consent box, no portal, no confirmation email",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "medium",
+      "evidence": [
+        { "file": "app/api/checkout/route.ts", "line": 6 },
+        { "absent": "No automatic-renewal terms near the checkout (that it renews until cancelled, and how to cancel)" },
+        { "absent": "No unchecked consent checkbox for the renewal terms" },
+        { "absent": "No way to cancel online (billing portal, cancel route or cancel call)" },
+        { "absent": "No confirmation email that states the subscription terms" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{ "description": "Stripe subscriptions with disclosure, unchecked consent, billing portal and confirmation email", "mode": "static", "expect": [] }

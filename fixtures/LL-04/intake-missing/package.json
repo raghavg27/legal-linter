@@ -1,0 +1,1 @@
+{ "name": "fires-stripe-next-checkout", "private": true, "dependencies": { "next": "15.0.0", "react": "19.0.0", "stripe": "17.0.0" } }

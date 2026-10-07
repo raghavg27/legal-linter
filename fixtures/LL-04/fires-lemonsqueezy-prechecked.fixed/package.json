@@ -1,0 +1,1 @@
+{ "name": "fires-lemonsqueezy-prechecked", "private": true, "type": "module", "dependencies": { "@lemonsqueezy/lemonsqueezy.js": "4.0.0", "react": "19.0.0" }, "devDependencies": { "vite": "6.0.0" } }

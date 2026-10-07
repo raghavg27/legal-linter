@@ -1,0 +1,14 @@
+{
+  "description": "Lemon Squeezy checkout with disclosure, portal and confirmation email, but the consent checkbox is pre-checked",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "medium",
+      "evidence": [
+        { "file": "src/lib/billing.ts", "line": 4 },
+        { "absent": "Consent checkbox for the renewal terms is pre-checked" }
+      ]
+    }
+  ]
+}

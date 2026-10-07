@@ -1,0 +1,1 @@
+{ "description": "Stripe Checkout in payment mode (a one-time lifetime deal) with a bare pricing page: not a subscription", "mode": "static", "expect": [] }

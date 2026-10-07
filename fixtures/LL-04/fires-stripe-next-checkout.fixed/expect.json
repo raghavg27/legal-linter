@@ -1,0 +1,1 @@
+{ "description": "fires-stripe-next-checkout after the fix guidance: disclosure, unchecked consent box, billing portal, confirmation email", "mode": "static", "expect": [] }

@@ -1,0 +1,28 @@
+{
+  "description": "Stripe subscriptions with no config: needs the subscriptions and countries answers",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "needs_intake",
+      "confidence": "medium",
+      "evidence": [
+        {
+          "file": "app/api/checkout/route.ts",
+          "line": 6
+        },
+        {
+          "absent": "No automatic-renewal terms near the checkout (that it renews until cancelled, and how to cancel)"
+        },
+        {
+          "absent": "No unchecked consent checkbox for the renewal terms"
+        },
+        {
+          "absent": "No way to cancel online (billing portal, cancel route or cancel call)"
+        },
+        {
+          "absent": "No confirmation email that states the subscription terms"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "description": "The start page itself lists per-month plans billed annually, with no renewal terms",
+  "mode": "runtime",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "medium",
+      "evidence": [{ "absent": "Page shows recurring prices but no automatic-renewal terms (that it renews until cancelled, and how to cancel)" }]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "description": "Start page links to a pricing page with a monthly price and no renewal terms; the crawler follows the link",
+  "mode": "runtime",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "medium",
+      "evidence": [{ "absent": "Page shows recurring prices but no automatic-renewal terms (that it renews until cancelled, and how to cancel)" }]
+    }
+  ]
+}

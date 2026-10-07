@@ -1,0 +1,1 @@
+{ "description": "fires-lemonsqueezy-prechecked after the fix guidance: the consent checkbox starts unchecked", "mode": "static", "expect": [] }

@@ -1,0 +1,14 @@
+# Copied word for word from RULEBOOK.md (tests/rulebook-sync.test.ts enforces this).
+# doesNotApplyIf and exposureKind are ours, written from the rulebook text; see LEGAL_REVIEW.md.
+ruleId: LL-04
+name: "Subscription that renews silently"
+law: "California Automatic Renewal Law, Bus. & Prof. Code §17600 ff. (amended by AB 2863, effective 1 Jul 2025)"
+trap: "Checkout lacks clear renewal terms next to the pay button, separate consent to those terms, a confirmation email, or a way to cancel online."
+appliesWhen: "Subscriptions sold to California consumers."
+doesNotApplyIf: "No subscriptions are sold, or none are sold to consumers in California."
+exposure: "Goods or services sent without compliant consent count as an unconditional gift, which drives refund demands for every renewal, plus unfair-competition claims."
+exposureKind: consequence
+detectionConfidence: "Medium"
+sources: []
+lastReviewed: null
+reviewStatus: draft

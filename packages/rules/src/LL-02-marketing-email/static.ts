@@ -13,7 +13,7 @@ import { findEmailSends, resolveImport, templateContent, type EmailSend, type Te
 const MARKETING =
   /newsletter|digest|promo(tion|tional)?|offer|discount|\bsale\b|coupon|\bdeals?\b|launch|announce(ment)?|campaign|broadcast|drip|nurture|re-?engage|win-?back|we miss you|product[- ]?updates?|what'?s new|weekly|monthly|changelog|% off/i;
 const TRANSACTIONAL =
-  /reset|password|verif(y|ication)|confirm(ation)?|magic[- ]?link|sign[- ]?in|log[- ]?in|\botp\b|one[- ]time|\bcode\b|receipt|invoice|\border\b|payment|billing|refund|security|alert|2fa|two[- ]factor|invit(e|ation)|shipping|delivery/i;
+  /reset|password|verif(y|ication)|confirm(ation)?|magic[- ]?link|sign[- ]?in|log[- ]?in|\botp\b|one[- ]time|\bcode\b|receipt|invoice|\border\b|payment|billing|refund|security|alert|2fa|two[- ]factor|invit(e|ation)|shipping|delivery|notification|\btest\b/i;
 
 export type Classification = 'marketing' | 'transactional' | 'unclear';
 

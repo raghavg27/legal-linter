@@ -3,6 +3,7 @@ export * from './schemas.ts';
 export { defineRule, type RuleDefinition } from './define-rule.ts';
 export { DISCLAIMER, evaluateCapture, scanRepo, scanSite, type ScanOptions } from './engine.ts';
 export { findingId } from './finding-id.ts';
+export { isLocalTarget, isPublicAddress } from './net/address.ts';
 export { contentHash, recordJudgment, type StoredJudgment, type StoredJudgments } from './judgments.ts';
 export { guidanceFor, type SelectedGuidance, type SelectedStep } from './fix-guidance.ts';
 export { matchTopics, type TopicMatch } from './preflight.ts';

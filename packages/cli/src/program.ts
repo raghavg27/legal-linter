@@ -1,8 +1,11 @@
 import { Command, CommanderError, Option } from 'commander';
 import type { Readable } from 'node:stream';
-import { defaultReportPath, formatText, intakeSchema, scanRepo, scanSite, writeHtmlReport, type ScanReport } from '@legal-lint/core';
+import { defaultReportPath, formatText, intakeSchema, scanRepo, writeHtmlReport, type ScanReport } from '@legal-lint/core';
 import { rules } from '@legal-lint/rules';
 import { askIntake, writeIntake } from './init.ts';
+import { activate, checkLicence, type Licence } from './licence/gate.ts';
+import { defaultRuntime, homeDir, maskKey, type RuntimeEnv } from './licence/store.ts';
+import { scanUrl } from './scan-url.ts';
 import pkg from '../package.json' with { type: 'json' };
 
 export const VERSION: string = pkg.version;
@@ -43,7 +46,14 @@ async function output(report: ScanReport, opts: OutputOptions, reportDir: string
   return report.summary.open > 0 ? EXIT.findings : EXIT.clean;
 }
 
-function buildProgram(io: Io, setExit: (code: number) => void): Command {
+function buildProgram(io: Io, setExit: (code: number) => void, rt: RuntimeEnv): Command {
+  // No free tier: scans run only with a valid key. A grace-period warning goes to stderr so --json stays parseable.
+  const gate = async (): Promise<Licence> => {
+    const licence = await checkLicence(rt, VERSION);
+    if (licence.warning) io.stderr.write(`legal-lint: ${licence.warning}\n`);
+    return licence;
+  };
+
   const program = new Command('legal-lint')
     .description('Finds legal traps in startup codebases and live sites. Reports and guides; never edits code.')
     .version(VERSION)
@@ -63,6 +73,7 @@ function buildProgram(io: Io, setExit: (code: number) => void): Command {
     .addOption(ruleOption())
     .addOption(htmlOption())
     .action(async (root: string, opts: OutputOptions & { rule?: string[] }) => {
+      await gate();
       const report = await scanRepo(root, { rules, toolVersion: VERSION, only: knownRuleIds(opts.rule) });
       setExit(await output(report, opts, root, io));
     });
@@ -72,10 +83,11 @@ function buildProgram(io: Io, setExit: (code: number) => void): Command {
     .description('Load a live or preview URL in headless Chromium and check what happens before any interaction.')
     .argument('<url>', 'http(s) URL to scan')
     .option('--json', 'print the report as JSON')
-    .option('--timeout <ms>', 'page load timeout in milliseconds', (v) => Number.parseInt(v, 10), 30_000)
+    .option('--timeout <ms>', 'page load timeout in milliseconds (local scans)', (v) => Number.parseInt(v, 10), 30_000)
+    .option('--local', 'load the page with Chromium on this machine instead of the hosted scanner (localhost and private addresses always are)')
     .addOption(ruleOption())
     .addOption(htmlOption())
-    .action(async (url: string, opts: OutputOptions & { rule?: string[]; timeout: number }) => {
+    .action(async (url: string, opts: OutputOptions & { rule?: string[]; timeout: number; local?: boolean }) => {
       let parsed: URL;
       try {
         parsed = new URL(url);
@@ -83,11 +95,14 @@ function buildProgram(io: Io, setExit: (code: number) => void): Command {
         throw new UsageError(`Not a valid URL: ${url}`);
       }
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new UsageError('Only http and https URLs can be scanned.');
-      const report = await scanSite(parsed.href, {
-        rules,
-        toolVersion: VERSION,
+      const licence = await gate();
+      const report = await scanUrl(parsed.href, {
+        rt,
+        licence,
+        version: VERSION,
+        local: opts.local,
         only: knownRuleIds(opts.rule),
-        capture: { timeoutMs: opts.timeout },
+        timeoutMs: opts.timeout,
       });
       setExit(await output(report, opts, process.cwd(), io));
     });
@@ -121,6 +136,31 @@ function buildProgram(io: Io, setExit: (code: number) => void): Command {
     });
 
   program
+    .command('activate')
+    .description('Check a licence key and save it for this user (~/.legal-lint/key). Sends only the key and the version.')
+    .argument('<key>', 'licence key, starting ll_')
+    .action(async (key: string) => {
+      const { file, expiresAt } = await activate(rt, key, VERSION);
+      io.stdout.write(`Licence key ${maskKey(key.trim())} is valid${expiresAt ? ` until ${expiresAt.slice(0, 10)}` : ''}. Saved to ${file}.\n`);
+    });
+
+  program
+    .command('licence')
+    .description('Show which licence key is in use and when it was last checked.')
+    .action(async () => {
+      try {
+        const l = await checkLicence(rt, VERSION);
+        const from = l.source === 'env' ? 'LEGAL_LINT_KEY' : `the saved key (${homeDir(rt.env)})`;
+        io.stdout.write(
+          `Key ${maskKey(l.key)} from ${from}.\nLast checked ${l.checkedAt}. Valid until ${l.expiresAt ?? 'no end date'}.\n${l.warning ? `${l.warning}\n` : ''}`,
+        );
+      } catch (e) {
+        io.stdout.write(`${(e as Error).message}\n`);
+        setExit(EXIT.error);
+      }
+    });
+
+  program
     .command('mcp')
     .description('Start the MCP server on stdio, for coding agents such as Claude Code and Cursor.')
     .action(async () => {
@@ -132,11 +172,15 @@ function buildProgram(io: Io, setExit: (code: number) => void): Command {
   return program;
 }
 
-export async function run(argv: string[], io: Io = process): Promise<number> {
+export async function run(argv: string[], io: Io = process, rt: RuntimeEnv = defaultRuntime()): Promise<number> {
   let code: number = EXIT.clean;
-  const program = buildProgram(io, (c) => {
-    code = c;
-  });
+  const program = buildProgram(
+    io,
+    (c) => {
+      code = c;
+    },
+    rt,
+  );
   try {
     await program.parseAsync(argv, { from: 'user' });
     return code;

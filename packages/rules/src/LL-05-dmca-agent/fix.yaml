@@ -11,7 +11,7 @@ goal: >-
 steps:
   - title: Add a DMCA policy page at /dmca
     why: >-
-      Rights holders must find the person who gets copyright notices. They look
+      Rights holders need to find the person who gets copyright notices. They look
       for a stable /dmca route with a link in the footer. The re-scan also
       looks for this route.
     instructions: >-
@@ -43,8 +43,8 @@ steps:
 
   - title: Give a repeat-infringer policy
     why: >-
-      Users must know what occurs to accounts that upload infringing content
-      many times. The app must also have a method to do this action.
+      Users should know what occurs to accounts that upload infringing content
+      many times. The app also needs a method to do this action.
     instructions: >-
       Add the policy to the /dmca page and to the terms of service. For
       example: the site suspends accounts that get valid notices many times.
@@ -78,4 +78,4 @@ ownerSteps:
   - title: Confirm the text of the repeat-infringer and counter-notice policies
     why: >-
       These policies tell how the owner will act on notices. Thus the owner
-      must confirm that they agree with the actions that will really occur.
+      should confirm that they agree with the actions that will really occur.

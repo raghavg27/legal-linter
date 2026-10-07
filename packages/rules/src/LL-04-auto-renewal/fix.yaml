@@ -33,9 +33,9 @@ steps:
 
   - title: Add a separate consent checkbox that is not checked by default
     why: >-
-      The consent to the renewal terms must be a separate action. The customer
-      must tick an empty box. Do not use a box that is checked before. Do not
-      use a box that also accepts the terms of service.
+      The consent to the renewal terms should be a separate action. The
+      customer ticks an empty box. The box is not checked before, and it is not
+      the same box as "I accept the terms of service".
     instructions: >-
       Add a checkbox that is not checked by default. An example label is "I
       agree that my subscription renews automatically until I cancel."
@@ -46,7 +46,7 @@ steps:
   - title: Let customers cancel online
     why: >-
       The trap also includes no method to cancel online. Customers who signed
-      up online must not have to send an email or call to stop the payments.
+      up online should not have to send an email or call to stop the payments.
     instructions: >-
       Add a "Manage billing" or "Cancel subscription" action in the account
       settings. For Stripe, create a customer portal session
@@ -57,8 +57,7 @@ steps:
 
   - title: Send a confirmation email that gives the terms
     why: >-
-      The customer must have a permanent copy of the terms that they agreed
-      to. For yearly plans, a reminder each year prevents a renewal that the
+      The customer needs a permanent copy of the terms that they agreed to. For yearly plans, a reminder each year prevents a renewal that the
       customer does not expect.
     instructions: >-
       Add an email template, for example emails/subscription-confirmation.tsx.

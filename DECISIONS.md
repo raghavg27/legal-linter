@@ -74,6 +74,28 @@ One line per non-obvious choice, and why.
 - **With a page in place, registration comes from the intake:** unanswered is a `needs_intake` finding, "no" is an open finding, and "yes" means no finding.
 - **Upload detection covers the rulebook's list plus Supabase Storage, Vercel Blob and Firebase Storage**, which are common in the target stack.
 
+## HTML report
+
+- **One self-contained page, no scripts, no external fonts or styles.** It opens from disk, and a report that loaded Google Fonts would trip LL-01 itself.
+- **Written to `.legal-lint/report.html` in the project, with a `.gitignore` of `*` in that folder.** The report quotes snippets, so it should not be committed by accident; the repo index also skips the folder, so a re-scan never reports the report.
+- **Every rule that ran is listed, including "Nothing found" and "Not applicable".** The owner sees what was checked, not only what failed. To support this, a rule run now carries the rule name.
+
+## MCP server
+
+- **MCP TypeScript SDK v2 (`@modelcontextprotocol/server`), not v1 (`@modelcontextprotocol/sdk`).** v2 is the stable line; v1 is legacy. It still negotiates the 2025 protocol that Claude Code and Cursor speak; a test checks 2025-06-18 and 2025-11-25 over real stdio.
+- **Findings are returned in full, not trimmed to the top few.** Owner's decision on 2026-10-07, replacing the brief's "top findings with a count of the rest". Only judgment material over 2,000 characters is cut, marked `truncated`, because the agent can open the file.
+- **Every result is `structuredContent` plus the same JSON as a text block.** Some clients show the model only the text.
+- **Every tool takes an optional `path`, defaulting to the server's working directory.** Claude Code starts servers in the project; other clients may not.
+- **Scan tools write the HTML report and return its path, so they are not marked read-only.** They are marked idempotent and non-destructive.
+- **`answer_judgment` re-scans, and refuses an answer whose `contentHash` no longer matches.** An answer is never stored against material the agent did not read. It stores `answeredBy: "agent"` and a reason, so the owner can review the call in the config file.
+- **Added `answer_intake`, which the brief did not list.** Without it a `needs_intake` finding is a dead end for the agent. Its description says to use only the user's own answers and never to guess.
+- **Pre-flight matches whole words against each rule's topics, ignoring a trailing plural "s", and shows which topic matched.** Phrases that only look like a topic (`notTopics`: "font size", "Font Awesome", "email field") are ignored. Topics were tuned against a table of phrases in the tests: added "stripe" and "uploads"; removed "icons", "theme", "posts" and "storage", which matched unrelated work.
+- **Pre-flight returns the rule's goal, its "done when" checks and owner steps, not the full steps.** `get_fix_guidance` gives the steps; pre-flight stays short and adds no new legal text.
+- **`scan_url` through MCP reads intake from the project at `path`, not the server's working directory, and allows localhost.** It runs on the user's own machine, usually against their own preview. Blocking private addresses belongs to the hosted API (milestone 5).
+- **The MCP SDK is loaded only by the `mcp` command,** so the scan commands start as fast as before.
+- **No licence check in this milestone.** Keyed and keyless MCP tests wait for milestone 5; with no free tier, "keyless" will mean "refuses to run".
+- **Milestone 3 was skipped at the owner's request,** so the crawler does not read robots.txt yet.
+
 ## Tooling
 
 - **pnpm 10.34.6, pinned in `packageManager`.** The installed corepack cannot run pnpm 12.

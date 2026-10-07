@@ -8,6 +8,13 @@ Items for the lawyer. The rulebook's figures and dates are copied as written and
 - **Text written by us, not copied from the rulebook:** each rule's `doesNotApplyIf`, its `exposureKind` label (statutory maximum, named case or consequence), the two-sentence finding explanations in the detector code, and the fix guidance in `fix.yaml`.
 - **Disclaimer wording:** "Legal Lint describes what it observed and the risk it may create. It is not legal advice."
 
+- **Text added in milestone 4, written by us:**
+  - MCP server instructions: "Results describe observed risk; they are not legal advice, and fixing a finding is not a promise that the product meets the law."
+  - Pre-flight check: "Legal Lint covers only a few specific traps, so an empty result does not mean the feature is legally clear."
+  - HTML report headline and section text, for example "Nothing to fix right now." and "Whether these apply depends on your business."
+  Please confirm "Nothing to fix right now" cannot be read as a clean bill of health.
+- **Judgments made by an AI agent.** A coding agent can now answer whether an email is marketing or transactional. A "transactional" answer removes the finding. The answer and the agent's reason are stored in the project config for the owner to review. Is relying on that acceptable, or should the owner confirm drops?
+
 ## LL-01 · Google Fonts
 
 - `doesNotApplyIf`: "The site or app has no visitors from the EU or EEA." Please confirm.

@@ -4,7 +4,7 @@ A linter for legal traps in startup codebases and live sites. Each rule is a law
 
 Legal Lint reports and guides. It never edits your code: every finding comes with fix guidance that your coding agent applies.
 
-> Status: phase 1, milestone 2. Rules LL-01 to LL-05 are implemented.
+> Status: phase 1, milestone 4. Rules LL-01 to LL-05, the CLI, the HTML report and the MCP server are implemented. Batch URL scans (milestone 3) were skipped for now.
 
 | Rule | Trap | Checks |
 |---|---|---|
@@ -20,9 +20,10 @@ Legal Lint reports and guides. It never edits your code: every finding comes wit
 legal-lint init [path]          # answer the project questions that decide which rules apply
 legal-lint scan [path]          # scan a repository on this machine
 legal-lint scan-url <url>       # load a live or preview URL and check what happens before any click
+legal-lint mcp                  # start the MCP server for coding agents (stdio)
 ```
 
-Both scan commands accept `--json` and `--rule LL-01`. `scan-url` also takes `--timeout <ms>`. It visits the URL plus up to four same-origin pricing or legal pages linked from it, and never clicks, types or submits anything. `init` takes `--answers '<json>'` for scripted use and `--force` to answer again.
+Both scan commands accept `--json`, `--rule LL-01` and `--html [file]`, which also writes a one-page HTML report for the product owner (default `.legal-lint/report.html`; that folder ignores itself in git). `scan-url` also takes `--timeout <ms>`. It visits the URL plus up to four same-origin pricing or legal pages linked from it, and never clicks, types or submits anything. `init` takes `--answers '<json>'` for scripted use and `--force` to answer again.
 
 Exit codes: `0` no open findings, `1` at least one open finding, `2` the scan could not run.
 
@@ -44,10 +45,38 @@ Some findings need judgment the scanner can't make, for example whether an email
 { "judgments": { "LL-02-56f31f0791": { "answer": "transactional", "contentHash": "9154502ec67e0397", "answeredAt": "2026-10-07T10:00:00Z" } } }
 ```
 
+## Coding agents (MCP)
+
+`legal-lint mcp` starts a local MCP server on stdio. Claude Code:
+
+```sh
+claude mcp add legal-lint -- npx legal-lint mcp
+```
+
+Cursor (`.cursor/mcp.json`):
+
+```json
+{ "mcpServers": { "legal-lint": { "command": "npx", "args": ["legal-lint", "mcp"] } } }
+```
+
+| Tool | What it does |
+|---|---|
+| `preflight_check` | Before building payments, analytics, email, uploads, auth or fonts: which rules apply and what must be true afterwards |
+| `scan_repo` | Every finding in the working tree, with file and lines; writes the HTML report |
+| `scan_url` | Runtime findings for a live or preview URL (localhost works); writes the HTML report |
+| `get_fix_guidance` | Fix steps picked for the project's framework, plus steps only the owner can do |
+| `answer_judgment` | Records the agent's answer to a `needs_judgment` question, with its reason |
+| `answer_intake` | Records the user's answers to the project questions |
+| `explain_rule` | The trap, the law, the exposure, and whether the rule applies here |
+
+Before the package is published, point the agent at a local build: `pnpm build`, then use `node /path/to/legal-linter/packages/cli/dist/bin.js mcp` as the command.
+
 ## What leaves your machine
 
 - `scan` reads your repository locally and sends nothing anywhere. A test enforces this: it intercepts every outbound network call during a scan and fails if anything is sent.
 - `scan-url` visits the URL you give it from your machine, the way a browser would.
+- The MCP server runs on your machine and uses the same scanner. A test runs a scan through it with every network call blocked.
+- HTML reports are written into your project folder and go nowhere else.
 
 ## Development
 

@@ -15,7 +15,6 @@ import {
   mergeIntake,
   recordJudgment,
   scanRepo,
-  scanSite,
   writeHtmlReport,
   type ApplicabilityResult,
   type CaptureOptions,
@@ -33,11 +32,16 @@ import {
   preflightOutput,
   scanOutput,
 } from './output.ts';
+import { checkLicence, type Licence } from '../licence/gate.ts';
+import { defaultRuntime, type RuntimeEnv } from '../licence/store.ts';
+import { scanUrl } from '../scan-url.ts';
 
 export interface ServerOptions {
   version: string;
   /** Crawler options for scan_url. Tests pass a shared browser and offline mode. */
   capture?: Omit<CaptureOptions, 'toolVersion'>;
+  /** Licence lookup and network access; tests pass their own. */
+  runtime?: RuntimeEnv;
 }
 
 /** Judgment material longer than this is cut in scan results; the agent can read the file for the rest. */
@@ -54,6 +58,7 @@ How to use it:
 - For a needs_judgment finding, read the material and call answer_judgment.
 - For a needs_intake finding, ask the user the question and record their answer with answer_intake. Never guess an answer.
 - Tell the user where the HTML report is, so they can see what is left.
+- Every tool needs a licence key. If a tool says one is missing, tell the user to set LEGAL_LINT_KEY or run \`legal-lint activate <key>\`.
 Results describe observed risk; they are not legal advice, and fixing a finding is not a promise that the product meets the law.`;
 
 const pathParam = z
@@ -124,6 +129,13 @@ const ruleIdsParam = z.array(z.enum(RULE_IDS)).optional().describe('Only run the
 
 export function createServer(opts: ServerOptions): McpServer {
   const server = new McpServer({ name: 'legal-lint', version: opts.version }, { instructions: INSTRUCTIONS });
+  const rt = opts.runtime ?? defaultRuntime();
+  // No free tier: every tool checks the licence first (cached, so this is a file read, not a network call).
+  const requireLicence = async (): Promise<Licence> => {
+    const licence = await checkLicence(rt, opts.version);
+    if (licence.warning) process.stderr.write(`legal-lint mcp: ${licence.warning}\n`);
+    return licence;
+  };
 
   server.registerTool(
     'preflight_check',
@@ -142,6 +154,7 @@ export function createServer(opts: ServerOptions): McpServer {
       annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ building, path: p }) => {
+      await requireLicence();
       const dir = await projectDir(p);
       const intake = (await loadConfig(dir))?.intake ?? null;
       const matches = matchTopics(building, rules);
@@ -189,6 +202,7 @@ export function createServer(opts: ServerOptions): McpServer {
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ path: p, rules: only }) => {
+      await requireLicence();
       const dir = await projectDir(p);
       const report = await scanRepo(dir, { rules, toolVersion: opts.version, only });
       return scanResult(report, dir, 'scan_repo');
@@ -200,19 +214,21 @@ export function createServer(opts: ServerOptions): McpServer {
     {
       title: 'Scan a live or preview URL',
       description:
-        'Loads a live or preview URL (localhost works) in headless Chromium on this machine and reports what happens before any click: requests to Google Fonts, session replay recording, subscription prices without renewal terms. ' +
+        'Loads a live or preview URL in headless Chromium and reports what happens before any click: requests to Google Fonts, session replay recording, subscription prices without renewal terms. Public URLs are loaded by the Legal Lint hosted scanner (only the URL is sent); localhost and private addresses load on this machine and need Playwright. ' +
         'Visits the page plus up to four linked pricing or legal pages, and never clicks, types or submits. ' +
-        'Use it on a running preview after fixing a runtime finding, or when the user asks about a deployed site. Needs Playwright installed. Also writes the HTML report.',
+        'Use it on a running preview after fixing a runtime finding, or when the user asks about a deployed site. Also writes the HTML report.',
       inputSchema: z.object({
         url: z.string().describe('http or https URL, for example http://localhost:3000'),
         path: pathParam.describe('Project root whose legal-lint.config.json answers apply, and where the HTML report goes. Defaults to the server working directory.'),
         rules: ruleIdsParam,
         timeoutMs: z.number().int().min(1000).max(120_000).optional().describe('Page load timeout per page. Default 30000.'),
+        local: z.boolean().optional().describe('Load the page with Chromium on this machine instead of the hosted scanner. localhost and private addresses always load locally.'),
       }),
       outputSchema: scanOutput,
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     },
-    async ({ url, path: p, rules: only, timeoutMs }) => {
+    async ({ url, path: p, rules: only, timeoutMs, local }) => {
+      const licence = await requireLicence();
       let parsed: URL;
       try {
         parsed = new URL(url);
@@ -222,13 +238,16 @@ export function createServer(opts: ServerOptions): McpServer {
       if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') throw new Error('Only http and https URLs can be scanned.');
       const dir = await projectDir(p);
       const config = await loadConfig(dir);
-      const report = await scanSite(parsed.href, {
-        rules,
-        toolVersion: opts.version,
+      const report = await scanUrl(parsed.href, {
+        rt,
+        licence,
+        version: opts.version,
+        local,
         only,
+        timeoutMs,
         intake: config?.intake ?? null,
         judgments: config?.judgments ?? {},
-        capture: { ...opts.capture, ...(timeoutMs ? { timeoutMs } : {}) },
+        capture: opts.capture,
       });
       return scanResult(report, dir, 'scan_url');
     },
@@ -251,6 +270,7 @@ export function createServer(opts: ServerOptions): McpServer {
       annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ findingId, ruleId, path: p }) => {
+      await requireLicence();
       const id = findingId ? FINDING_ID.exec(findingId)![1]! : ruleId;
       if (!id) throw new Error('Pass findingId or ruleId.');
       if (findingId && ruleId && ruleId !== id) throw new Error(`Finding ${findingId} belongs to ${id}, not ${ruleId}.`);
@@ -293,6 +313,7 @@ export function createServer(opts: ServerOptions): McpServer {
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ findingId, answer, contentHash, reason, path: p }) => {
+      await requireLicence();
       const dir = await projectDir(p);
       const ruleId = FINDING_ID.exec(findingId)![1]!;
       // Scan again without stored answers, so the question and the material are current.
@@ -352,6 +373,7 @@ export function createServer(opts: ServerOptions): McpServer {
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
     async ({ answers, path: p }) => {
+      await requireLicence();
       if (Object.keys(answers).length === 0) throw new Error('No answers given.');
       const dir = await projectDir(p);
       const configFile = await mergeIntake(dir, answers);
@@ -377,6 +399,7 @@ export function createServer(opts: ServerOptions): McpServer {
       annotations: { readOnlyHint: true, idempotentHint: true, openWorldHint: false },
     },
     async ({ ruleId, path: p }) => {
+      await requireLicence();
       const rule = ruleById(ruleId);
       const dir = await projectDir(p);
       const intake = (await loadConfig(dir))?.intake ?? null;

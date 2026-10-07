@@ -19,6 +19,8 @@ export interface RuleMeta {
   detection: DetectionMethod[];
   /** Words a coding agent might use for what it is about to build. Used by the pre-flight check. */
   topics: string[];
+  /** Phrases that contain a topic word but mean something else ("font size" for the fonts rule). Ignored when matching. */
+  notTopics?: string[];
 }
 
 export interface ApplicabilityResult {

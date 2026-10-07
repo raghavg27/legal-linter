@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { configSchema, type Intake, type LegalLintConfig } from './schemas.ts';
 import type { ApplicabilityResult, IntakeQuestion } from './types.ts';
@@ -72,4 +72,30 @@ export async function loadConfig(dir: string): Promise<LegalLintConfig | null> {
     throw new ConfigError(`${CONFIG_FILE} has invalid values:\n  ${issues.join('\n  ')}`);
   }
   return parsed.data;
+}
+
+/**
+ * Applies a change to legal-lint.config.json, keeping every key it does not
+ * touch, and validates the result before writing. Returns the file path.
+ */
+export async function updateConfigFile(
+  dir: string,
+  update: (raw: Record<string, unknown>) => Record<string, unknown>,
+): Promise<string> {
+  const file = path.join(dir, CONFIG_FILE);
+  const existing = await loadConfig(dir);
+  const raw = existing ? (JSON.parse(await readFile(file, 'utf8')) as Record<string, unknown>) : {};
+  const next = update(raw);
+  const parsed = configSchema.safeParse(next);
+  if (!parsed.success) {
+    const issues = parsed.error.issues.map((i) => `${i.path.join('.') || '(root)'}: ${i.message}`);
+    throw new ConfigError(`Refusing to write ${CONFIG_FILE}:\n  ${issues.join('\n  ')}`);
+  }
+  await writeFile(file, `${JSON.stringify(next, null, 2)}\n`);
+  return file;
+}
+
+/** Adds intake answers, replacing earlier answers to the same questions. */
+export function mergeIntake(dir: string, answers: Intake): Promise<string> {
+  return updateConfigFile(dir, (raw) => ({ ...raw, intake: { ...(raw.intake as Intake | undefined), ...answers } }));
 }

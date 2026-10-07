@@ -76,7 +76,14 @@ export const configSchema = z.object({
   judgments: z
     .record(
       z.string(),
-      z.object({ answer: z.string(), contentHash: z.string(), answeredAt: z.string() }),
+      z.object({
+        answer: z.string(),
+        contentHash: z.string(),
+        answeredAt: z.string(),
+        // Who answered (for example "agent") and why, so a reviewer can check the call later.
+        answeredBy: z.string().optional(),
+        reason: z.string().optional(),
+      }),
     )
     .optional(),
   licenceKey: z.string().optional(),

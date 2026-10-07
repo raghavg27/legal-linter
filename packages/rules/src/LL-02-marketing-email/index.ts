@@ -29,6 +29,7 @@ export const ll02 = defineRule({
       'nodemailer',
       'waitlist',
     ],
+    notTopics: ['email address', 'email field', 'email input', 'email validation', 'email login', 'email verification'],
   },
   legalYaml,
   fixYaml,

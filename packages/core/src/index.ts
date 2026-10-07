@@ -3,7 +3,9 @@ export * from './schemas.ts';
 export { defineRule, type RuleDefinition } from './define-rule.ts';
 export { DISCLAIMER, evaluateCapture, scanRepo, scanSite, type ScanOptions } from './engine.ts';
 export { findingId } from './finding-id.ts';
-export { contentHash, type StoredJudgments } from './judgments.ts';
+export { contentHash, recordJudgment, type StoredJudgment, type StoredJudgments } from './judgments.ts';
+export { guidanceFor, type SelectedGuidance, type SelectedStep } from './fix-guidance.ts';
+export { matchTopics, type TopicMatch } from './preflight.ts';
 export {
   CONFIG_FILE,
   ConfigError,
@@ -12,6 +14,8 @@ export {
   appliesToEuVisitors,
   intakeQuestions,
   loadConfig,
+  mergeIntake,
+  updateConfigFile,
 } from './intake.ts';
 export { formatHtml } from './report/html.ts';
 export { formatText } from './report/text.ts';

@@ -17,6 +17,7 @@ export const ll04 = defineRule({
     topics: [
       'payments',
       'subscriptions',
+      'stripe',
       'stripe subscriptions',
       'stripe checkout',
       'billing',

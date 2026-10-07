@@ -1,25 +1,32 @@
 # Adding a rule
 
-The recipe for adding a rule, for example a phase 2 rule (LL-06 to LL-10). Follow it in order. Each step names the test that will fail if it is skipped.
+This is the procedure to add a rule, for example a phase 2 rule (LL-06 to LL-10). Do the steps in sequence. Each step gives the name of the test that fails if you do not do the step.
 
-## 1. Agree the rule with the owner
+## 1. Agree on the rule with the owner
 
-The rule must already be in `RULEBOOK.md`, with these fields: `Law`, `Region`, `Phase`, `Fix (full|partial)`, `Detection (static, runtime, intake)`, `Trap`, `Applies when`, `Exposure`, `Detection confidence`. `tests/rulebook-sync.test.ts` parses those bullets. If the rulebook entry is missing a field, ask; don't invent one.
+The rule must already be in `RULEBOOK.md` with these fields: `Law`, `Region`, `Phase`, `Fix (full|partial)`, `Detection (static, runtime, intake)`, `Trap`, `Applies when`, `Exposure`, `Detection confidence`. `tests/rulebook-sync.test.ts` parses these bullets. If the rulebook entry does not have a field, ask the owner. Do not write the field yourself.
 
-Write down in `DECISIONS.md` (under a new `## LL-0N` heading) how you read the detection notes: what counts as the trap, what counts as the fix, and what you chose to leave out.
+In `DECISIONS.md`, add a new `## LL-0N` heading. Under it, write how you understand the detection notes:
+
+- What is the trap.
+- What is the fix.
+- What you decided not to include.
 
 ## 2. Create the rule folder
 
 ```
 packages/rules/src/LL-0N-<slug>/
-  index.ts      defineRule(...) — metadata, applicability, detectors
-  legal.yaml    copied from RULEBOOK.md
+  index.ts      defineRule(...): metadata, applicability, detectors
+  legal.yaml    copy of the text in RULEBOOK.md
   fix.yaml      guidance for a coding agent
   static.ts     detectStatic(repo, ctx), if the rule has static detection
   runtime.ts    detectRuntime(site, ctx), if the rule has runtime detection
 ```
 
-Diagram 11 in `docs/architecture.md` shows how these files come together, and diagram 3 shows how the engine turns a detector's result into a status. Copy the shape of an existing rule. `LL-03-session-replay` has both modes; `LL-05-dmca-agent` shows intake-driven applicability and absence evidence.
+Diagram 11 in `docs/architecture.md` shows how these files connect. Diagram 3 shows how the engine changes the result of a detector into a status. Copy the shape of a rule that exists:
+
+- `LL-03-session-replay` has the two modes.
+- `LL-05-dmca-agent` shows applicability that comes from intake, and evidence of absence.
 
 ### index.ts
 
@@ -27,75 +34,82 @@ Diagram 11 in `docs/architecture.md` shows how these files come together, and di
 export const ll0N = defineRule({
   meta: {
     id: 'LL-0N',
-    name: '…',            // exactly the rulebook heading after "LL-0N · "
-    law: '…',             // exactly the rulebook's Law field
-    regions: ['US'],      // the rulebook's Region field
+    name: '…',            // the same text as the rulebook heading after "LL-0N · "
+    law: '…',             // the same text as the Law field of the rulebook
+    regions: ['US'],      // the Region field of the rulebook
     phase: 2,
-    fixType: 'partial',   // must equal fix.yaml's fixType
+    fixType: 'partial',   // must be the same as the fixType in fix.yaml
     detection: ['static', 'runtime'],
-    topics: ['…'],        // what a coding agent says it is building; drives preflight_check
-    notTopics: ['…'],     // phrases that contain a topic word but mean something else
+    topics: ['…'],        // words that a coding agent uses for the work it starts. preflight_check uses them.
+    notTopics: ['…'],     // phrases that contain a topic word but have a different meaning
   },
   legalYaml,
   fixYaml,
-  applies: (intake) => …, // yes / no / unknown with the missing intake keys
+  applies: (intake) => …, // yes, no, or unknown with the missing intake keys
   detectStatic,
   detectRuntime,
 });
 ```
 
-`defineRule` validates both YAML files with zod at load time and checks that `ruleId`, `name`, `law` and `fixType` agree with the metadata. A mismatch throws when the rules package is imported.
+When the rules package loads, `defineRule` validates the two YAML files with zod. It also makes sure that `ruleId`, `name`, `law` and `fixType` agree with the metadata. If they do not agree, the import of the rules package throws an error.
 
 ### Applicability
 
-`applies(intake)` returns `{ value, reason, missing? }`. An unanswered question is `unknown` with `missing` listing the intake keys, never `no`. Reuse `shared/applicability.ts` (`appliesToUsVisitors`, `appliesWithFlag`) or core's `appliesToEuVisitors` where they fit.
+`applies(intake)` returns `{ value, reason, missing? }`. If a question has no answer, the value is `unknown`, and `missing` gives the intake keys. The value is never `no` in this condition. Where applicable, use the functions that exist:
 
-If the rule needs an intake question that does not exist yet, add it in three places: `intakeSchema` in `packages/core/src/schemas.ts`, `INTAKE_QUESTIONS` in `packages/core/src/intake.ts` (which also drives `legal-lint init`), and a line in `DECISIONS.md`.
+- `appliesToUsVisitors` and `appliesWithFlag` in `shared/applicability.ts`.
+- `appliesToEuVisitors` in core.
+
+If the rule needs a new intake question, add it at three locations:
+
+1. `intakeSchema` in `packages/core/src/schemas.ts`.
+2. `INTAKE_QUESTIONS` in `packages/core/src/intake.ts`. `legal-lint init` also uses this list.
+3. One line in `DECISIONS.md`.
 
 ### Detectors
 
-- `detectStatic(repo, ctx)` reads the `RepoIndex`. Non-shipping files are already filtered out. For JS/TS, use the AST helpers exported from core (`parseSource`, `walk`, `calleeText`, `objectProp`, `stringValue`, `importsOf`…). For HTML and CSS, strip comments first (`stripHtmlComments`, `stripCssComments`).
-- `detectRuntime(site, ctx)` is a pure function of the `SiteCapture`: requests, cookies, websockets, HTML and text per page. If the rule needs a page the crawler does not visit yet, extend `RELEVANT_LINK` in `packages/core/src/runtime/crawler.ts` and note it in `DECISIONS.md`.
-- Return `RawFinding`s:
-  - `key`: a file or page path, never a line number. It becomes the stable finding id.
-  - one finding per file (static) or per site (runtime), with every location as evidence;
-  - `explanation`: two sentences, what was observed and then the risk;
-  - `needsIntake` when this finding depends on an answer the rule-level check does not cover;
-  - `judgment` when a person or agent must decide (see LL-02). Give options with `outcome: 'open' | 'drop'` and the material needed to answer.
+- `detectStatic(repo, ctx)` reads the `RepoIndex`. The index does not include files that do not ship. For JS/TS, use the AST helpers that core exports: `parseSource`, `walk`, `calleeText`, `objectProp`, `stringValue`, `importsOf` and others. For HTML and CSS, remove the comments first with `stripHtmlComments` and `stripCssComments`.
+- `detectRuntime(site, ctx)` is a pure function of the `SiteCapture`. The capture has the requests, cookies, websockets, and the HTML and text of each page. If the rule needs a page that the crawler does not visit, extend `RELEVANT_LINK` in `packages/core/src/runtime/crawler.ts`. Write a note about it in `DECISIONS.md`.
+- Return `RawFinding` objects:
+  - `key`: a file or page path. Never use a line number. The key becomes the stable finding id.
+  - Give one finding for each file (static) or for each site (runtime). Put each location in the evidence.
+  - `explanation`: two sentences. The first tells what the detector saw. The second tells the risk.
+  - `needsIntake`: use it when this finding needs an answer that the check at rule level does not include.
+  - `judgment`: use it when a person or an agent must make a decision (see LL-02). Give options with `outcome: 'open' | 'drop'`, and the material that is necessary for the answer.
 
 ## 3. Write legal.yaml
 
-Copy `Trap`, `Applies when`, `Exposure` and `Detection confidence` from the rulebook **character for character**. The fields that are ours:
+Copy `Trap`, `Applies when`, `Exposure` and `Detection confidence` from the rulebook. **Each character must be the same.** We write these fields ourselves:
 
-- `doesNotApplyIf`: one sentence derived from "Applies when".
+- `doesNotApplyIf`: one sentence that comes from "Applies when".
 - `exposureKind`: `statutory_max`, `named_case` or `consequence`.
-- `sources: []`, `lastReviewed: null`, `reviewStatus: draft` until the lawyer reviews it.
+- `sources: []`, `lastReviewed: null` and `reviewStatus: draft`. Keep these values until the lawyer does a review.
 
-Add `doesNotApplyIf`, the `exposureKind` label and the explanation wording to `LEGAL_REVIEW.md` under a new heading for the rule.
+In `LEGAL_REVIEW.md`, add a new heading for the rule. Under it, add `doesNotApplyIf`, the `exposureKind` label and the text of the explanations.
 
 ## 4. Write fix.yaml
 
-Written for a coding agent, not a lawyer:
+The reader of this file is a coding agent, not a lawyer.
 
-- `goal`: what the fixed product looks like.
-- `steps`: each with a `title`, a `why` (so the agent can adapt when the repo is shaped differently) and `instructions`. Use `variants` for framework-specific instructions. The keys are `next-app`, `next-pages`, `vite-react`, `remix`, `node-server` and `plain-html`; put Next.js first.
-- `doneWhen`: checks that are true after the fix. The last one should be "A repo re-scan reports no LL-0N finding."
-- `ownerSteps`: things only the owner can do (register, confirm terms, write real content), each with a `why`.
+- `goal`: how the product looks after the fix.
+- `steps`: each step has a `title`, a `why` and `instructions`. The `why` lets the agent change the step when the repo has a different shape. Use `variants` for instructions that are specific to a framework. The keys are `next-app`, `next-pages`, `vite-react`, `remix`, `node-server` and `plain-html`. Put Next.js first.
+- `doneWhen`: conditions that are true after the fix. The last condition must be "A repo re-scan shows no LL-0N finding."
+- `ownerSteps`: tasks that only the owner can do, for example register, confirm terms, or write real content. Each task has a `why`.
 
 ## 5. Register the rule
 
-Add it to `packages/rules/src/index.ts`, both to the export and to the `rules` array, in id order. Everything else picks it up from there: the CLI, `--rule`, the MCP tools, the HTML report and the fixture tests.
+Add the rule to `packages/rules/src/index.ts`. Add it to the export and to the `rules` array, in the sequence of the ids. All other parts get the rule from there: the CLI, `--rule`, the MCP tools, the HTML report and the fixture tests.
 
 ## 6. Fixtures
 
-Under `fixtures/LL-0N/`. For each detection mode (static, runtime):
+Put the fixtures in `fixtures/LL-0N/`. For each detection mode (static, runtime), add:
 
-- `fires-*` (at least two, different frameworks or different ways of making the mistake), each with a `.fixed` twin that is the same project after following `fix.yaml` by hand;
-- `pass-*` (does the right thing) and `near-miss-*` (looks like the trap but isn't), at least two in total;
-- `intake-*` for missing and negative intake answers;
-- `judgment-*` if the rule asks judgment questions.
+- Two or more `fires-*` fixtures. Use different frameworks or different types of the mistake. Each fixture has a `.fixed` twin. The twin is the same project after you follow `fix.yaml` manually.
+- Two or more `pass-*` and `near-miss-*` fixtures in total. A `pass-*` fixture does the correct thing. A `near-miss-*` fixture looks like the trap but is not the trap.
+- `intake-*` fixtures for missing and negative intake answers.
+- `judgment-*` fixtures, if the rule asks judgment questions.
 
-Each fixture has `legal-lint.config.json` (unless it tests missing intake) and an `expect.json`:
+Each fixture has a `legal-lint.config.json`, but not when the fixture tests missing intake. Each fixture also has an `expect.json`:
 
 ```json
 {
@@ -107,19 +121,24 @@ Each fixture has `legal-lint.config.json` (unless it tests missing intake) and a
 }
 ```
 
-Runtime fixtures put the site in `site/` and expect `{ "requestUrl": "…" }` evidence. Absence findings expect `{ "absent": "<observed text>" }`. Fixture sites must not reach the network. In tests the crawler runs offline: outside requests are still recorded but answered locally with an empty response, so reference vendor URLs freely.
+Runtime fixtures put the site in `site/`. They expect `{ "requestUrl": "…" }` evidence. Findings about absence expect `{ "absent": "<observed text>" }`. Fixture sites must not connect to the network. In tests, the crawler runs offline. It still records outside requests, but it answers them locally with an empty response. Thus you can use vendor URLs in fixtures.
 
-`tests/fixture-meta.test.ts` fails until the coverage minimums are met. The cross-rule quiet test also runs your new detector over every other rule's pass, near-miss and fixed fixtures, so a misfire there is a real false positive.
+`tests/fixture-meta.test.ts` fails until the fixtures have the minimum coverage. The quiet test for all rules also runs your new detector on the pass, near-miss and fixed fixtures of all other rules. Thus a finding there is a real false positive.
 
-Mutation-check each condition in the detector (see `CONTRIBUTING.md`).
+Do a mutation check on each condition in the detector (see `CONTRIBUTING.md`).
 
 ## 7. Preflight topics
 
-Add rows to the `CASES` table in `tests/preflight.test.ts`: phrases an agent would use for this feature (expecting your rule), and near misses that must stay quiet. Tune `topics` and `notTopics` until the table passes, and record any topic you added or removed, and why, in `DECISIONS.md`.
+Add rows to the `CASES` table in `tests/preflight.test.ts`:
+
+- Phrases that an agent uses for this feature. These rows expect your rule.
+- Near misses. These rows must not give your rule.
+
+Change `topics` and `notTopics` until the table passes. In `DECISIONS.md`, write each topic that you added or removed, and the reason.
 
 ## 8. Finish
 
 - README: add the rule to the table at the top.
 - `CHANGELOG.md`: add the rule under "Unreleased".
-- `pnpm typecheck && pnpm build && pnpm test`.
-- If the rule has runtime detection, the hosted API needs no change: it returns the raw capture and the CLI runs the rules. If the crawler or `SiteCapture` changed, see the compatibility note in `RELEASING.md`.
+- Run `pnpm typecheck && pnpm build && pnpm test`.
+- If the rule has runtime detection, the hosted API needs no change. The API returns the raw capture and the CLI runs the rules. If you changed the crawler or `SiteCapture`, read the compatibility note in `RELEASING.md`.

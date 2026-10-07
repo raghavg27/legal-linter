@@ -1,74 +1,74 @@
 # Contributing
 
-How to work on Legal Lint without breaking its promises. Read `README.md` for what the tool does and `CLAUDE.md` for how the code fits together.
+This document tells how to work on Legal Lint and keep its promises. For the functions of the tool, read `README.md`. For how the code parts connect, read `CLAUDE.md`.
 
-## Which document is for what
+## The function of each document
 
-| File | What it holds | Update it when |
+| File | Contents | When to update it |
 |---|---|---|
-| `RULEBOOK.md` | The product spec: every rule's trap, law, detection, exposure | The lawyer or owner changes a rule. Change the rule's `legal.yaml` in the same commit. |
-| `DECISIONS.md` | One line per non-obvious choice, and why | You choose something a reader could not guess from the code |
-| `LEGAL_REVIEW.md` | Questions for the lawyer, and legal-facing text we wrote ourselves | You write user-facing legal wording, or a rulebook figure looks wrong |
-| `KNOWN_ISSUES.md` | Open bugs, limits and deferred work | You find a problem you are not fixing now, or you fix one listed there |
-| `CHANGELOG.md` | What changed in each release | Every user-visible change, under "Unreleased" |
-| `RELEASING.md` | How to publish the CLI and redeploy the API | The release steps change |
-| `docs/architecture.md` | Mermaid diagrams of each flow, with the file that owns it | You change a flow a diagram shows (order of checks, a status, what is sent, a limit), or rename a file it names. Add a diagram for a new flow. |
-| `docs/adding-a-rule.md` | The recipe for a new rule | The rule interface or the fixture harness changes |
-| `packages/api/DEPLOY.md` | First deploy of the hosted API, and its limits | Deploy steps or environment variables change |
-| `packages/api/OPERATIONS.md` | Running the hosted API: keys, errors, logs, usage | A new error reason, log field or admin command |
-| `CLAUDE_CODE_PROMPT.md` | The original phase 1 brief | Never. It is history; `DECISIONS.md` records where we departed from it. |
+| `RULEBOOK.md` | The product specification: the trap, law, detection and exposure of each rule | When the lawyer or the owner changes a rule. Change the `legal.yaml` of the rule in the same commit. |
+| `DECISIONS.md` | One line for each decision that is not obvious, with the reason | When you make a decision that a reader cannot find from the code |
+| `LEGAL_REVIEW.md` | Questions for the lawyer, and legal text that we wrote ourselves | When you write legal text that users see, or when a rulebook figure looks incorrect |
+| `KNOWN_ISSUES.md` | Open bugs, limits and work for a later time | When you find a problem that you do not fix now, or when you fix a problem in the list |
+| `CHANGELOG.md` | The changes in each release | For each change that users can see. Put it under "Unreleased". |
+| `RELEASING.md` | How to publish the CLI and deploy the API again | When the release steps change |
+| `docs/architecture.md` | Mermaid diagrams of each flow, with the file that owns the flow | When you change a flow that a diagram shows (the sequence of checks, a status, the data that goes out, a limit), or when you change the name of a file in a diagram. For a new flow, add a diagram. |
+| `docs/adding-a-rule.md` | The procedure for a new rule | When the rule interface or the fixture harness changes |
+| `packages/api/DEPLOY.md` | The first deploy of the hosted API, and its limits | When deploy steps or environment variables change |
+| `packages/api/OPERATIONS.md` | How to operate the hosted API: keys, errors, logs, usage | When you add an error reason, a log field or an admin command |
+| `CLAUDE_CODE_PROMPT.md` | The original phase 1 brief | Never. It is a historical record. `DECISIONS.md` records where we did not follow it. |
 
-## Before every commit
+## Before each commit
 
 ```sh
 pnpm typecheck
-pnpm build      # tests/mcp-stdio.test.ts runs the built CLI, so build first
+pnpm build      # tests/mcp-stdio.test.ts runs the built CLI. Thus, build first.
 pnpm test
 ```
 
-All three must pass. The Firestore contract test is skipped unless `FIRESTORE_EMULATOR_HOST` is set (see `packages/api/DEPLOY.md` section 9). Run it whenever you touch `packages/api/src/store*.ts` or `firestore-store.ts`.
+The three commands must pass. The Firestore contract test does not run if `FIRESTORE_EMULATOR_HOST` is not set (see `packages/api/DEPLOY.md` section 9). Run this test each time that you change `packages/api/src/store*.ts` or `firestore-store.ts`.
 
 ## Commits
 
-- Small, one change each, with a conventional message: `feat(rules): …`, `fix(LL-02): …`, `test: …`, `docs: …`, `chore: …`. Scopes in use: `core`, `rules`, `cli`, `mcp`, `api`, `report`, and a rule id for a rule fix.
-- The repo's git identity only. No co-author lines or generated-by footers.
-- Commit locally. Pushing is the owner's call.
+- Make small commits with one change each. Use a conventional message: `feat(rules): …`, `fix(LL-02): …`, `test: …`, `docs: …`, `chore: …`. The scopes in use are `core`, `rules`, `cli`, `mcp`, `api`, `report`, and a rule id for a fix to a rule.
+- Use only the git identity of the repo. Do not add co-author lines or "generated by" footers.
+- Commit locally. The owner decides when to push.
 
 ## Fixtures come first
 
-A rule is only as good as the fixtures that prove it. `tests/fixture-meta.test.ts` enforces this for every rule and mode (static, runtime):
+A rule is only as good as the fixtures that prove it. `tests/fixture-meta.test.ts` makes this mandatory for each rule and each mode (static, runtime):
 
-- at least two `fires-*` fixtures, each with a `.fixed` twin that scans clean;
-- at least two quiet fixtures (`pass-*` or `near-miss-*`), at least one of them a near miss.
+- Two or more `fires-*` fixtures. Each one has a `.fixed` twin. A scan of the twin gives no findings.
+- Two or more quiet fixtures (`pass-*` or `near-miss-*`). One or more of them must be a near miss.
 
-When changing a detector:
+When you change a detector:
 
-1. **Write the fixture before the fix.** A false alarm found on a real repo becomes a `near-miss-*` fixture. A missed case becomes a `fires-*` fixture with its `.fixed` twin.
-2. **Mutation-check the detector.** Break the condition you just added (invert it, delete it) and confirm a fixture fails. If nothing fails, the fixture is not testing what you think.
-3. **Never special-case a fixture.** If a fixture is hard to pass, the detector is not handling the general case. Write down why rather than matching the fixture's exact text.
-4. **When unsure, lower the confidence or stay silent.** A false alarm costs more than a missed finding.
+1. **Write the fixture before the fix.** A false alarm on a real repo becomes a `near-miss-*` fixture. A case that the detector did not find becomes a `fires-*` fixture with its `.fixed` twin.
+2. **Do a mutation check on the detector.** Break the condition that you added (invert it or delete it). Make sure that a fixture fails. If no fixture fails, the fixture does not test the condition that you think it tests.
+3. **Never write special code for one fixture.** If it is difficult for a fixture to pass, the detector does not do the general case correctly. Write down the reason. Do not match the exact text of the fixture.
+4. **If you are not sure, decrease the confidence or give no finding.** A false alarm costs more than a finding that the detector does not give.
 
-To try a detector on a real project, scan a **copy** of it, never the original:
+To try a detector on a real project, scan a **copy** of the project. Never scan the original:
 
 ```sh
 cp -R ~/Documents/GitHub/some-app /tmp/some-app-copy
 node packages/cli/dist/bin.js scan /tmp/some-app-copy --json
 ```
 
-## Rules that tests enforce
+## Rules that tests make mandatory
 
-You will find out when you break these, but it is quicker to know them:
+A test fails when you break one of these rules. But it is faster to know them before:
 
-- `legal.yaml` copies `RULEBOOK.md` word for word (`tests/rulebook-sync.test.ts`).
-- A finding explanation is exactly two sentences and avoids words that conclude the user breaks the law (`tests/helpers/wording.ts`).
-- A repo scan sends nothing but the licence check (`tests/privacy.test.ts`).
-- Runtime tests never touch the network. Fixture sites are served from 127.0.0.1.
-- Every file named in `docs/architecture.md` exists (`tests/architecture-doc.test.ts`). The test cannot tell whether a diagram's steps still match the code, so check that yourself when you change a flow.
-- The deploy script cannot loosen the free-tier limits, and the Docker image's package versions must match `package.json` (`packages/api/src/deploy-files.test.ts`).
+- `legal.yaml` is a copy of `RULEBOOK.md`, word for word (`tests/rulebook-sync.test.ts`).
+- A finding explanation has exactly two sentences. It does not use words that tell the user that they break the law (`tests/helpers/wording.ts`).
+- A repo scan sends only the licence check (`tests/privacy.test.ts`).
+- Runtime tests never connect to the network. The fixture sites are served from 127.0.0.1.
+- Each file that `docs/architecture.md` names must exist (`tests/architecture-doc.test.ts`). The test cannot find if the steps of a diagram still agree with the code. When you change a flow, examine this yourself.
+- The deploy script cannot make the free-tier limits larger. The package versions in the Docker image must be the same as in `package.json` (`packages/api/src/deploy-files.test.ts`).
 
-## Rules no test can enforce
+## Rules that no test can make mandatory
 
-- Do not correct or extend legal figures, dates or citations from memory. Copy the rulebook and add doubts to `LEGAL_REVIEW.md`.
-- No LLM API calls and no model API key anywhere in the project.
-- Legal Lint never edits the user's code. New capability goes into fix guidance, not a fix command.
-- Not in phase 1: billing, a web UI, a GitHub App, rules LL-06 to LL-15, batch URL scans. Don't build or stub them without the owner's go-ahead.
+- Do not correct or add to legal figures, dates or citations from memory. Copy the rulebook. Add each doubt to `LEGAL_REVIEW.md`.
+- Do not use LLM API calls or a model API key at any location in the project.
+- Legal Lint never edits the code of the user. Put a new capability into the fix guidance, not into a fix command.
+- These items are not in phase 1: billing, a web UI, a GitHub App, rules LL-06 to LL-15, batch URL scans. Do not build them or make stubs for them if the owner does not approve.

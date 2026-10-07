@@ -55,3 +55,10 @@ Items for the lawyer. The rulebook's figures and dates are copied as written and
 - **Scope.** The trap and the intake speak of uploads hosted *publicly*, while "Applies when" says "any product with user-generated content". We apply the rule when the intake says uploads are hosted publicly. Which scope is right?
 - **Our explanations say** a missing, unreachable or unregistered agent "can cost the app its DMCA safe harbor for what users upload." Please confirm the wording.
 - **Fix guidance.** It lists the elements of a notice ("the work, where it appears on the site, contact details, a good-faith statement and a signature"), a counter-notice section and a repeat-infringer policy. These are written by us; please review.
+
+## Hosted service (milestone 5)
+
+- **Scanning third-party sites on request.** The hosted scanner loads any public URL a key holder gives it, which may be a site they do not own. Does the service need terms of use, for example limiting scans to sites the user owns or may test, or a robots.txt rule? (Milestone 3, which was to add robots.txt, was skipped.)
+- **Privacy wording.** The README's "What leaves your machine" now describes the licence check and hosted scans. Please confirm it is accurate and sufficient as a privacy notice, and whether a separate privacy policy is needed for the service.
+- **Logs.** The service logs the key prefix, the site host, the outcome and the duration. During setup it can temporarily log X-Forwarded-For (IP addresses). Is a retention period or notice needed?
+- **Messages written by us:** "Legal Lint needs a licence key…", "The hosted scanner has used its scans for this month…", and "… is not a public web address on port 80 or 443, so the hosted scanner will not load it." These contain no legal claims, but are listed for completeness.

@@ -50,7 +50,7 @@
 **Interfaces:**
 - Produces: `isPublicAddress(ip: string): boolean`, `isLocalTarget(hostname: string): boolean`; subpath exports `@legal-lint/core/address`, `@legal-lint/core/crawler`, `@legal-lint/core/remote` (the last file arrives in Task 2), so the API bundle does not pull in the TypeScript compiler.
 
-- [ ] **Step 1: Add the dependency and subpath exports**
+- [x] **Step 1: Add the dependency and subpath exports**
 
 ```bash
 pnpm --filter @legal-lint/core add ipaddr.js@2.5.0
@@ -68,7 +68,7 @@ Edit `packages/core/package.json` `exports` to:
   },
 ```
 
-- [ ] **Step 2: Write the failing test**
+- [x] **Step 2: Write the failing test**
 
 `packages/core/src/net/address.test.ts`:
 
@@ -139,12 +139,12 @@ describe('isLocalTarget', () => {
 });
 ```
 
-- [ ] **Step 3: Run it to see it fail**
+- [x] **Step 3: Run it to see it fail**
 
 Run: `pnpm vitest run packages/core/src/net/address.test.ts`
 Expected: FAIL, cannot find `./address.ts`.
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `packages/core/src/net/address.ts`:
 
@@ -191,12 +191,12 @@ Add to `packages/core/src/index.ts`:
 export { isLocalTarget, isPublicAddress } from './net/address.ts';
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `pnpm vitest run packages/core/src/net/address.test.ts`
 Expected: PASS. If a row fails, check what `ipaddr.js` returns for it (`node -e "console.log(require('ipaddr.js').parse('…').range())"` from `packages/core`). Fix the classifier, not the table.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/core packages/cli/package.json pnpm-lock.yaml
@@ -219,7 +219,7 @@ git commit -m "feat(core): classify public and local addresses for the hosted sc
 - Consumes: `SiteCapture` from `packages/core/src/types.ts`.
 - Produces: `siteCaptureSchema`, `licenceRequestSchema`, `licenceResponseSchema`, `scanRequestSchema`, `scanResponseSchema`, `apiErrorSchema`, `API_ERROR_REASONS`, and types `LicenceResponse`, `ApiErrorReason`. `CaptureOptions.budgetMs?: number`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `packages/core/src/remote.test.ts`:
 
@@ -284,12 +284,12 @@ describe('licenceKey in the project config', () => {
 });
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `pnpm vitest run packages/core/src/remote.test.ts packages/core/src/engine.test.ts`
 Expected: FAIL, `remote.ts` is missing and `licenceKey` is accepted.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `packages/core/src/remote.ts`:
 
@@ -399,12 +399,12 @@ export {
 } from './remote.ts';
 ```
 
-- [ ] **Step 4: Run the tests and the typecheck**
+- [x] **Step 4: Run the tests and the typecheck**
 
 Run: `pnpm vitest run packages/core && pnpm typecheck`
 Expected: PASS. If `z.never({ error })` does not produce the message in zod 4.6.5, use `z.unknown().refine(() => false, { message: '…' }).optional()` and say so in DECISIONS.md.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/core
@@ -435,7 +435,7 @@ git commit -m "feat(core): add the API wire format, a crawl time budget, and ref
   - `class ScanQueue { constructor(maxRunning: number, maxWaiting: number); run<T>(fn: () => Promise<T>): Promise<T> }`, `class BusyError`
   - `clientIp(forwardedFor: string | undefined, trustedHops: number): string`
 
-- [ ] **Step 1: Scaffold the package**
+- [x] **Step 1: Scaffold the package**
 
 `packages/api/package.json`:
 
@@ -489,7 +489,7 @@ export default defineConfig({
 Run: `pnpm install`
 Expected: the lockfile gains `packages/api`.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `packages/api/src/keys.test.ts`:
 
@@ -667,12 +667,12 @@ describe('clientIp', () => {
 });
 ```
 
-- [ ] **Step 3: Run them to see them fail**
+- [x] **Step 3: Run them to see them fail**
 
 Run: `pnpm vitest run packages/api`
 Expected: FAIL, the modules are missing.
 
-- [ ] **Step 4: Implement**
+- [x] **Step 4: Implement**
 
 `packages/api/src/keys.ts`:
 
@@ -901,12 +901,12 @@ export function clientIp(forwardedFor: string | undefined, trustedHops: number):
 }
 ```
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `pnpm vitest run packages/api && pnpm typecheck`
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/api pnpm-lock.yaml
@@ -930,7 +930,7 @@ git commit -m "feat(api): add licence keys stored as hashes, scan usage limits a
   - `checkTarget(url: string, policy, resolve): Promise<{ ok: true; url: string } | { ok: false; reason: 'bad_url' | 'private_address'; message: string }>`
   - `startEgressProxy({ policy, resolve }): Promise<EgressProxy>` where `interface EgressProxy { url: string; refused: string[]; close(): Promise<void> }`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `packages/api/src/egress/target.test.ts`:
 
@@ -1080,12 +1080,12 @@ describe('egress proxy', () => {
 });
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `pnpm vitest run packages/api/src/egress`
 Expected: FAIL, the modules are missing.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `packages/api/src/egress/target.ts`:
 
@@ -1317,12 +1317,12 @@ export async function startEgressProxy(opts: { policy: TargetPolicy; resolve: Re
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `pnpm vitest run packages/api/src/egress && pnpm typecheck`
 Expected: PASS. If the `::1` listener fails on this machine, stop and report it rather than switching the internal server to 127.0.0.1. The test depends on the two servers being on different addresses.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/api/src/egress
@@ -1341,7 +1341,7 @@ git commit -m "feat(api): refuse private targets at input and in an egress proxy
 - Consumes: `startEgressProxy`, `TargetPolicy`, `Resolver` (Task 4); `captureSite` from `@legal-lint/core/crawler`.
 - Produces: `interface Scanner { scan(url: string): Promise<SiteCapture>; close(): Promise<void>; proxy: EgressProxy }`, `createScanner(opts: { policy: TargetPolicy; resolve: Resolver; toolVersion: string; pageTimeoutMs?: number; budgetMs?: number }): Promise<Scanner>`, `CHROMIUM_ARGS: string[]`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/egress.test.ts`:
 
@@ -1468,12 +1468,12 @@ describe('hosted scanner egress', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `pnpm vitest run tests/egress.test.ts`
 Expected: FAIL, `scan.ts` is missing.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `packages/api/src/scan.ts`:
 
@@ -1543,17 +1543,17 @@ export async function createScanner(opts: {
 }
 ```
 
-- [ ] **Step 4: Run the test**
+- [x] **Step 4: Run the test**
 
 Run: `pnpm vitest run tests/egress.test.ts`
 Expected: PASS. If `/ws` reports zero refusals, check whether Chromium sent it as CONNECT or as an upgrade. Either way the internal hit count must stay 0; if it doesn't, stop and report.
 
-- [ ] **Step 5: Run it five times to check for flakiness**
+- [x] **Step 5: Run it five times to check for flakiness**
 
 Run: `for i in 1 2 3 4 5; do pnpm vitest run tests/egress.test.ts || break; done`
 Expected: 5 passes. Record any flake in the milestone report.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/api/src/scan.ts tests/egress.test.ts
@@ -1577,7 +1577,7 @@ git commit -m "feat(api): run Chromium behind the egress proxy and prove interna
   - `interface AppDeps { keys: KeyStore; usage: UsageStore; scanner: { scan(url: string): Promise<SiteCapture> }; policy: TargetPolicy; resolve: Resolver; config: ApiConfig; now?: () => Date; log?: (e: LogEntry) => void }`
   - `createApp(deps: AppDeps): Hono`
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `packages/api/src/app.test.ts`:
 
@@ -1752,12 +1752,12 @@ describe('POST /v1/scan', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `pnpm vitest run packages/api/src/app.test.ts`
 Expected: FAIL, `app.ts` is missing.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `packages/api/src/config.ts`:
 
@@ -1933,12 +1933,12 @@ export function createApp(deps: AppDeps): Hono {
 }
 ```
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `pnpm vitest run packages/api && pnpm typecheck`
 Expected: PASS. If Hono's `c.json(data, status, headers)` overload rejects `{}` as headers, pass `undefined` instead.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/api/src/app.ts packages/api/src/config.ts packages/api/src/app.test.ts
@@ -1961,7 +1961,7 @@ git commit -m "feat(api): add licence and scan endpoints with per-key, per-IP an
 - Consumes: Tasks 3 to 6.
 - Produces: `class FirestoreStore implements KeyStore, UsageStore` (constructor takes a `Firestore`); `admin(argv: string[], store: KeyStore, out: (s: string) => void, now?: Date): Promise<number>`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `packages/api/src/firestore-store.test.ts`:
 
@@ -2066,12 +2066,12 @@ describe('deploy files', () => {
 });
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `pnpm vitest run packages/api`
 Expected: FAIL (missing modules and files). The Firestore contract test is skipped.
 
-- [ ] **Step 3: Implement the store, admin and server**
+- [x] **Step 3: Implement the store, admin and server**
 
 `packages/api/src/firestore-store.ts`:
 
@@ -2228,7 +2228,7 @@ process.on('SIGTERM', () => {
 });
 ```
 
-- [ ] **Step 4: Write the container and deploy files**
+- [x] **Step 4: Write the container and deploy files**
 
 `packages/api/Dockerfile`:
 
@@ -2359,17 +2359,17 @@ gcloud run deploy "$SERVICE" \
 
 Add to the root `package.json` scripts: `"build:api": "pnpm --filter @legal-lint/api build"`.
 
-- [ ] **Step 5: Run the tests and the bundle**
+- [x] **Step 5: Run the tests and the bundle**
 
 Run: `pnpm vitest run packages/api && pnpm typecheck && pnpm build:api && ls -la packages/api/dist`
 Expected: tests PASS (Firestore contract skipped); `dist/server.js` and `dist/admin.js` exist. Check the bundle does not contain the TypeScript compiler: `! grep -q "createSourceFile" packages/api/dist/server.js`.
 
-- [ ] **Step 6: Try the Firestore emulator if it can run here**
+- [x] **Step 6: Try the Firestore emulator if it can run here**
 
 Run: `java -version && npx -y firebase-tools@latest emulators:start --only firestore --project legal-lint-test` in the background, then `FIRESTORE_EMULATOR_HOST=127.0.0.1:8080 pnpm vitest run packages/api/src/firestore-store.test.ts`, then stop the emulator.
 Expected: PASS. If the emulator cannot start (download blocked, no Java), record that the Firestore contract was not run. Do not mark it as tested.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add packages/api .dockerignore .gcloudignore package.json pnpm-lock.yaml
@@ -2395,7 +2395,7 @@ git commit -m "feat(api): add the Firestore store, server entry, key admin scrip
   - `CACHE_MS`, `GRACE_MS`, `class LicenceError extends Error`, `interface Licence { key: string; source: 'env' | 'file'; checkedAt: string; expiresAt: string | null; warning?: string }`, `checkLicence(rt, version): Promise<Licence>`, `activate(rt, key, version): Promise<{ file: string; expiresAt: string | null }>`
   - Test helpers: `TEST_KEY`, `makeHome(opts?: { key?: string; checkedAt?: Date | null; expiresAt?: string | null; cacheKey?: string }): Promise<string>`, `fakeFetch(handler: (url: string, body: unknown) => Response | Promise<Response>): typeof fetch & { calls: { url: string; body: unknown }[] }`
 
-- [ ] **Step 1: Write the helpers and the failing test**
+- [x] **Step 1: Write the helpers and the failing test**
 
 `tests/helpers/licence.ts`:
 
@@ -2590,12 +2590,12 @@ describe('activate', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `pnpm vitest run tests/licence.test.ts`
 Expected: FAIL, the licence modules are missing.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `packages/cli/src/licence/store.ts`:
 
@@ -2831,12 +2831,12 @@ export async function activate(rt: RuntimeEnv, rawKey: string, version: string):
 }
 ```
 
-- [ ] **Step 4: Run the new tests and the whole suite**
+- [x] **Step 4: Run the new tests and the whole suite**
 
 Run: `pnpm vitest run tests/licence.test.ts && pnpm test && pnpm typecheck`
 Expected: PASS. Nothing is gated yet, so the existing tests are unaffected by the setup file.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/cli/src/licence tests/licence.test.ts tests/helpers/licence.ts tests/setup/licence.ts vitest.config.ts
@@ -2860,7 +2860,7 @@ git commit -m "feat(cli): add licence key lookup, a 24-hour cache with 7-day off
   - `interface UrlScanOptions { rt: RuntimeEnv; licence: Licence; version: string; local?: boolean; only?: readonly string[]; timeoutMs?: number; intake?: Intake | null; judgments?: StoredJudgments; capture?: Omit<CaptureOptions, 'toolVersion'> }`
   - `scanUrl(url: string, opts: UrlScanOptions): Promise<ScanReport>`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `tests/licence-cli.test.ts`:
 
@@ -3008,12 +3008,12 @@ describe('scanUrl remote', () => {
 });
 ```
 
-- [ ] **Step 2: Run them to see them fail**
+- [x] **Step 2: Run them to see them fail**
 
 Run: `pnpm vitest run tests/licence-cli.test.ts tests/scan-url.test.ts`
 Expected: FAIL (`scan-url.ts` missing; `run` ignores `rt`; no `activate`/`licence` commands).
 
-- [ ] **Step 3: Implement `scan-url.ts`**
+- [x] **Step 3: Implement `scan-url.ts`**
 
 `packages/cli/src/scan-url.ts`:
 
@@ -3059,7 +3059,7 @@ export async function scanUrl(url: string, opts: UrlScanOptions): Promise<ScanRe
 }
 ```
 
-- [ ] **Step 4: Wire `program.ts`**
+- [x] **Step 4: Wire `program.ts`**
 
 Changes to `packages/cli/src/program.ts`:
 
@@ -3137,12 +3137,12 @@ import { scanUrl } from './scan-url.ts';
 
 `LicenceError` and `RemoteScanError` reach the existing catch in `run()`, which prints `legal-lint: <message>` and returns `EXIT.error`. No special case is needed.
 
-- [ ] **Step 5: Run the tests**
+- [x] **Step 5: Run the tests**
 
 Run: `pnpm test && pnpm typecheck`
 Expected: PASS. The old CLI and HTML report tests pass because of the licensed setup file.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add packages/cli/src tests/licence-cli.test.ts tests/scan-url.test.ts
@@ -3161,7 +3161,7 @@ git commit -m "feat(cli): require a licence key for scans, add activate and lice
 - Consumes: `checkLicence`, `defaultRuntime`, `scanUrl`.
 - Produces: `ServerOptions.runtime?: RuntimeEnv`; `scan_url` input gains `local?: boolean`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `tests/mcp-licence.test.ts`:
 
@@ -3242,12 +3242,12 @@ describe('MCP server with a key', () => {
 });
 ```
 
-- [ ] **Step 2: Run it to see it fail**
+- [x] **Step 2: Run it to see it fail**
 
 Run: `pnpm vitest run tests/mcp-licence.test.ts`
 Expected: FAIL, the tools run without a key.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `packages/cli/src/mcp/server.ts`:
 
@@ -3309,12 +3309,12 @@ import { scanUrl } from '../scan-url.ts';
 
 7. Add one line to `INSTRUCTIONS`: `- Every tool needs a licence key. If a tool says one is missing, tell the user to set LEGAL_LINT_KEY or run \`legal-lint activate <key>\`.`
 
-- [ ] **Step 4: Run the tests**
+- [x] **Step 4: Run the tests**
 
 Run: `pnpm test && pnpm typecheck`
 Expected: PASS, including the existing `tests/mcp.test.ts` (licensed via the setup file; its scan_url tests use 127.0.0.1, so they stay local) and `tests/mcp-stdio.test.ts` (the child inherits `LEGAL_LINT_HOME`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add packages/cli/src/mcp/server.ts tests/mcp-licence.test.ts
@@ -3332,7 +3332,7 @@ git commit -m "feat(mcp): require a licence key for every tool and send public U
 **Interfaces:**
 - Consumes: `createApp`, `createScanner`, `MemoryStore`, `issueKey`, `readConfig` (API); `scanUrl`, `checkLicence`, `run` (CLI); `serve` from `@hono/node-server`.
 
-- [ ] **Step 1: Write the end-to-end test**
+- [x] **Step 1: Write the end-to-end test**
 
 `tests/remote-scan.test.ts`:
 
@@ -3412,7 +3412,7 @@ describe('remote URL scan, end to end', () => {
 
 If the first run shows that an unresolved request is not recorded by Chromium, stop and report: the remote scan would then miss third-party requests. Do not loosen the comparison.
 
-- [ ] **Step 2: Add the privacy tests**
+- [x] **Step 2: Add the privacy tests**
 
 In `tests/privacy.test.ts`:
 
@@ -3454,12 +3454,12 @@ import { makeHome, TEST_KEY } from './helpers/licence.ts';
 
 If the recorded fetch payload has no `body` (for example because `AbortSignal` does not serialise), parse `outbound[0].payload` once to see its shape and adjust only the extraction line. The assertion on the body must stay exact.
 
-- [ ] **Step 3: Run the tests**
+- [x] **Step 3: Run the tests**
 
 Run: `pnpm vitest run tests/remote-scan.test.ts tests/privacy.test.ts && pnpm test`
 Expected: PASS.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add tests/remote-scan.test.ts tests/privacy.test.ts
@@ -3473,7 +3473,7 @@ git commit -m "test: prove remote URL scans match local ones and the licence che
 **Files:**
 - Modify: `README.md`, `DECISIONS.md`, `LEGAL_REVIEW.md`
 
-- [ ] **Step 1: README**
+- [x] **Step 1: README**
 
 - Status line: `Status: phase 1, milestone 5. Rules LL-01 to LL-05, the CLI, the HTML report, the MCP server, licence keys and the hosted scanner are implemented. Batch URL scans (milestone 3) were skipped for now.`
 - New section **Licence key** after Usage:
@@ -3491,7 +3491,7 @@ git commit -m "test: prove remote URL scans match local ones and the licence che
   - HTML reports stay in your project folder.
 - Development: add `pnpm build:api`. Add a line pointing at `packages/api/DEPLOY.md` for the hosted service.
 
-- [ ] **Step 2: DECISIONS.md**
+- [x] **Step 2: DECISIONS.md**
 
 Add a `## Licence and hosted API` section with one line each:
 
@@ -3514,7 +3514,7 @@ Add a `## Licence and hosted API` section with one line each:
 
 Also replace the M4 line "No licence check in this milestone. Keyed and keyless MCP tests wait for milestone 5…" with: "**Licence check added in milestone 5;** keyed and keyless MCP tests live in `tests/mcp-licence.test.ts`." And replace "Blocking private addresses belongs to the hosted API (milestone 5)." with "The hosted API blocks private addresses; local scans do not need to."
 
-- [ ] **Step 3: LEGAL_REVIEW.md**
+- [x] **Step 3: LEGAL_REVIEW.md**
 
 Add a `## Hosted service (milestone 5)` section:
 
@@ -3523,7 +3523,7 @@ Add a `## Hosted service (milestone 5)` section:
 - **Logs.** The service logs the key prefix, the site host, the outcome and the duration. During setup it can temporarily log X-Forwarded-For (IP addresses). Is a retention period or notice needed?
 - **Messages written by us:** "Legal Lint needs a licence key…", "The hosted scanner has used its scans for this month…", and "… is not a public web address on port 80 or 443, so the hosted scanner will not load it." These contain no legal claims, but are listed for completeness.
 
-- [ ] **Step 4: Final verification**
+- [x] **Step 4: Final verification**
 
 Run each and read the output:
 
@@ -3537,7 +3537,7 @@ git status --short
 
 Expected: all tests pass (the Firestore contract skipped unless the emulator ran); typecheck clean; both bundles build; only intended files changed (`.DS_Store` stays uncommitted). Run the full suite a second time and note any flaky test by name (the known one is LL-03 `fires-runtime-hotjar-websocket`).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add README.md DECISIONS.md LEGAL_REVIEW.md

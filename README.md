@@ -4,7 +4,7 @@ A linter for legal traps in startup codebases and live sites. Each rule is a law
 
 Legal Lint reports and guides. It never edits your code: every finding comes with fix guidance that your coding agent applies.
 
-> Status: phase 1, milestone 4. Rules LL-01 to LL-05, the CLI, the HTML report and the MCP server are implemented. Batch URL scans (milestone 3) were skipped for now.
+> Status: phase 1, milestone 5. Rules LL-01 to LL-05, the CLI, the HTML report, the MCP server, licence keys and the hosted scanner are implemented. Batch URL scans (milestone 3) were skipped for now.
 
 | Rule | Trap | Checks |
 |---|---|---|
@@ -21,13 +21,25 @@ legal-lint init [path]          # answer the project questions that decide which
 legal-lint scan [path]          # scan a repository on this machine
 legal-lint scan-url <url>       # load a live or preview URL and check what happens before any click
 legal-lint mcp                  # start the MCP server for coding agents (stdio)
+legal-lint activate <key>       # check a licence key and save it for this user
+legal-lint licence              # show which licence key is in use and when it was last checked
 ```
 
-Both scan commands accept `--json`, `--rule LL-01` and `--html [file]`, which also writes a one-page HTML report for the product owner (default `.legal-lint/report.html`; that folder ignores itself in git). `scan-url` also takes `--timeout <ms>`. It visits the URL plus up to four same-origin pricing or legal pages linked from it, and never clicks, types or submits anything. `init` takes `--answers '<json>'` for scripted use and `--force` to answer again.
+Both scan commands accept `--json`, `--rule LL-01` and `--html [file]`, which also writes a one-page HTML report for the product owner (default `.legal-lint/report.html`; that folder ignores itself in git). `scan-url` also takes `--timeout <ms>` and `--local`. Public URLs are loaded by the Legal Lint hosted scanner; localhost and private addresses always load on your machine, and `--local` forces that for any URL. It visits the URL plus up to four same-origin pricing or legal pages linked from it, and never clicks, types or submits anything. `init` takes `--answers '<json>'` for scripted use and `--force` to answer again.
 
 Exit codes: `0` no open findings, `1` at least one open finding, `2` the scan could not run.
 
-`scan-url` needs Playwright and Chromium: `npm install playwright && npx playwright install chromium`.
+Playwright and Chromium (`npm install playwright && npx playwright install chromium`) are only needed for `--local` and for localhost or private addresses.
+
+## Licence key
+
+Legal Lint needs a licence key. There is no free tier.
+
+- `legal-lint activate <key>` checks the key and saves it to `~/.legal-lint/key`, readable only by you. `LEGAL_LINT_KEY` overrides it, which suits CI.
+- `legal-lint licence` shows which key is in use and when it was last checked.
+- Without a key, `scan`, `scan-url` and the MCP tools stop with directions. `init`, `--help` and `--version` still work.
+- The key is checked at most once a day. If the licence server can't be reached, Legal Lint keeps working for 7 days after the last successful check.
+- Never put the key in `legal-lint.config.json`: that file is committed. A config with `licenceKey` in it is refused.
 
 ## Project answers
 
@@ -63,7 +75,7 @@ Cursor (`.cursor/mcp.json`):
 |---|---|
 | `preflight_check` | Before building payments, analytics, email, uploads, auth or fonts: which rules apply and what must be true afterwards |
 | `scan_repo` | Every finding in the working tree, with file and lines; writes the HTML report |
-| `scan_url` | Runtime findings for a live or preview URL (localhost works); writes the HTML report |
+| `scan_url` | Runtime findings for a live or preview URL (localhost loads locally, public URLs use the hosted scanner, `local: true` forces local); writes the HTML report |
 | `get_fix_guidance` | Fix steps picked for the project's framework, plus steps only the owner can do |
 | `answer_judgment` | Records the agent's answer to a `needs_judgment` question, with its reason |
 | `answer_intake` | Records the user's answers to the project questions |
@@ -73,10 +85,11 @@ Before the package is published, point the agent at a local build: `pnpm build`,
 
 ## What leaves your machine
 
-- `scan` reads your repository locally and sends nothing anywhere. A test enforces this: it intercepts every outbound network call during a scan and fails if anything is sent.
-- `scan-url` visits the URL you give it from your machine, the way a browser would.
-- The MCP server runs on your machine and uses the same scanner. A test runs a scan through it with every network call blocked.
-- HTML reports are written into your project folder and go nowhere else.
+- `scan` reads your repository locally. The only network call is the licence check, at most once a day, which sends your licence key and the Legal Lint version. A test intercepts every outbound call during a scan and fails if anything else is sent.
+- `scan-url` on a public URL sends the URL (with your key and the version) to the Legal Lint scanner, which loads the page in its own browser and sends back what it recorded. Your intake answers and judgments stay on your machine; the rules run here. The scanner logs the key's first 8 characters, the site's host, the outcome and the duration, not the full URL.
+- `scan-url` on localhost or a private address, or with `--local`, runs Chromium on your machine and sends nothing to us.
+- The MCP server runs on your machine and uses the same paths.
+- HTML reports stay in your project folder.
 
 ## Development
 
@@ -85,7 +98,10 @@ pnpm install
 pnpm test        # unit, fixture, CLI and privacy tests (runtime fixtures use a local server, no network)
 pnpm typecheck
 pnpm build       # bundles the CLI to packages/cli/dist
+pnpm build:api   # bundles the hosted API to packages/api/dist
 ```
+
+The hosted service (licence checks and public URL scans) lives in `packages/api`. To deploy it, follow `packages/api/DEPLOY.md`.
 
 Each rule lives in `packages/rules/src/<rule>/` with two reviewable data files: `legal.yaml` (copied from `RULEBOOK.md`; a test keeps them in sync) and `fix.yaml` (guidance for coding agents). Fixtures live in `fixtures/<rule>/`, with an `expect.json` in each:
 

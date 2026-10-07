@@ -91,10 +91,31 @@ One line per non-obvious choice, and why.
 - **Added `answer_intake`, which the brief did not list.** Without it a `needs_intake` finding is a dead end for the agent. Its description says to use only the user's own answers and never to guess.
 - **Pre-flight matches whole words against each rule's topics, ignoring a trailing plural "s", and shows which topic matched.** Phrases that only look like a topic (`notTopics`: "font size", "Font Awesome", "email field") are ignored. Topics were tuned against a table of phrases in the tests: added "stripe" and "uploads"; removed "icons", "theme", "posts" and "storage", which matched unrelated work.
 - **Pre-flight returns the rule's goal, its "done when" checks and owner steps, not the full steps.** `get_fix_guidance` gives the steps; pre-flight stays short and adds no new legal text.
-- **`scan_url` through MCP reads intake from the project at `path`, not the server's working directory, and allows localhost.** It runs on the user's own machine, usually against their own preview. Blocking private addresses belongs to the hosted API (milestone 5).
+- **`scan_url` through MCP reads intake from the project at `path`, not the server's working directory, and allows localhost.** It runs on the user's own machine, usually against their own preview. The hosted API blocks private addresses; local scans do not need to.
 - **The MCP SDK is loaded only by the `mcp` command,** so the scan commands start as fast as before.
-- **No licence check in this milestone.** Keyed and keyless MCP tests wait for milestone 5; with no free tier, "keyless" will mean "refuses to run".
+- **Licence check added in milestone 5;** keyed and keyless MCP tests live in `tests/mcp-licence.test.ts`.
 - **Milestone 3 was skipped at the owner's request,** so the crawler does not read robots.txt yet.
+
+## Licence and hosted API
+
+- **The server records and the client judges.** The API returns a raw capture and the CLI runs the rules with local intake and judgments, so only the URL leaves the machine.
+- **Public URLs go to the hosted scanner; localhost and private addresses always run locally, and `--local` forces it.** The hosted scanner refuses private addresses by design.
+- **The key lives in `LEGAL_LINT_KEY` or `~/.legal-lint/key`, never `legal-lint.config.json`**, which is committed. A config that still has `licenceKey` is refused with directions.
+- **24-hour cache, 7-day grace only when the API is unreachable (network, timeout, 5xx, 429).** A definite invalid answer stops the tool at once and clears the cache.
+- **The MCP server starts and lists its tools without a key, and each call returns the licence message,** so the agent can tell the user what to do instead of seeing a broken server.
+- **Google Cloud Run in us-central1 with request-based billing, max 1 instance, 1 vCPU, 2 GiB, plus Firestore's default database.** Chosen over Fly.io (no free tier) and Render (512 MB, ephemeral disk) to stay inside the free quota; the owner adds a card and a $1 budget alert.
+- **A hard cap of 1,500 scans a month for the whole service, and a 40 s budget for starting pages (15 s per page).** Worst case that is half the free compute quota; the budget alert only emails.
+- **Per-IP limits are in memory,** which is correct with one instance. The client IP is the entry `TRUSTED_PROXY_HOPS` from the right of X-Forwarded-For, to be confirmed after the first deploy.
+- **Keys are `ll_` plus 32 base62 characters; Firestore keeps only the SHA-256 and the first 8 characters.** A leaked database does not leak working keys.
+- **A scan counts against the limits when Chromium is about to start, including failed loads.** The compute is spent either way. A refused URL does not count.
+- **SSRF has three layers:** an input check, an in-process egress proxy that resolves names itself and connects to the checked address (defeating DNS rebinding), and Chromium flags plus Playwright's forced `<-loopback>` proxying. Only public unicast addresses on ports 80 and 443 are allowed.
+- **Playwright adds `<-loopback>` to Chromium's proxy bypass list itself** (checked in playwright-core 1.63.0), so `CHROMIUM_ARGS` only disables QUIC and non-proxied WebRTC. A test proves loopback goes through the proxy.
+- **The image is Node slim plus Chromium's headless shell**, aiming to fit Artifact Registry's 0.5 GB free storage. A cleanup policy keeps one image. A test fails if the deploy script loosens the limits or the image's package versions drift from package.json.
+- **The API bundle imports core through subpaths (`@legal-lint/core/crawler`, `/remote`, `/address`)** so it does not pull in the TypeScript compiler.
+- **Tests run licensed by default** through a setup file that writes a fresh cache to a temporary home and points the API URL at a dead port. Gate tests build their own homes.
+- **The Firestore store shares the memory store's contract tests and runs them only under the emulator.** In milestone 5 they ran and passed against the emulator from `firebase-tools@13`, because the current firebase-tools needs Java 21 and this machine has Java 17.
+- **`DEFAULT_API_URL` is empty until the first deploy.** Until then, `LEGAL_LINT_API_URL` is required for activation and remote scans.
+- **`@hono/node-server` is also a root dev dependency,** because the end-to-end test in `tests/` serves the real API app on a local port.
 
 ## Tooling
 

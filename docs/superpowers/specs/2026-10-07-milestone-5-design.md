@@ -1,113 +1,120 @@
 # Milestone 5: hosted API and licence keys
 
-Status: approved in chat on 2026-10-07 (decisions 1 to 11 below). This spec records them for review.
+Status: approved in chat on 2026-10-07 (decisions 1 to 11 below). This specification records the decisions for review.
 
 ## Goal
 
-1. A small hosted service with two jobs: validate licence keys, and load public URLs in Chromium for users who do not have it installed.
-2. A licence gate in the CLI and the MCP server. There is no free tier: without a valid key, scans and MCP tools refuse to run (owner decision, 2026-10-06).
+1. A small hosted service with two functions: validate licence keys, and load public URLs in Chromium for users who did not install Chromium.
+2. A licence gate in the CLI and in the MCP server. There is no free tier. If there is no valid key, scans and MCP tools refuse to run (owner decision, 2026-10-06).
 
-The hosting must stay inside Google Cloud's free quota. The owner has no budget, so cost limits are part of the design, not an afterthought.
+The hosting must stay in the free quota of Google Cloud. The owner has no budget. Thus the cost limits are a part of the design from the start, not an item for later.
 
-## What does not change
+## Items that do not change
 
-- Repository scans run locally. Source code, file paths, intake answers and judgments never leave the machine.
-- The only data sent to the API is the licence key, the package version and, for URL scans, the URL.
-- Rules ship inside the local package. No obfuscation and no anti-tamper code.
+- Repository scans run locally. Source code, file paths, intake answers and judgments never go out of the machine.
+- The only data that goes to the API is the licence key, the package version and, for URL scans, the URL.
+- The rules are in the local package. No obfuscation and no anti-tamper code.
 
 ## Decisions
 
-1. **The server records, the client judges.** `POST /v1/scan` returns a `SiteCapture` (requests, cookies, page text and HTML, links). The CLI runs the runtime rules over it with `evaluateCapture`, using the local intake and judgments. Running rules on the server would mean sending intake answers.
-2. **Public URLs go to the API; local ones stay local.** `localhost`, `*.localhost` and IP literals in private, loopback or link-local ranges are scanned with local Chromium. `--local` (CLI) and `local: true` (MCP `scan_url`) force a local scan. If the API refuses a URL as private (for example an internal hostname), the error says to use `--local`.
-3. **The key never lives in the project config.** `legal-lint.config.json` is committed. The key comes from `LEGAL_LINT_KEY`, otherwise from `~/.legal-lint/key` written by `legal-lint activate <key>` (file mode 0600). A config that still has `licenceKey` is refused with a message saying where to move it.
-4. **Cache and grace.** A valid answer is cached for 24 hours in `~/.legal-lint/licence.json`, keyed by a hash of the key, so a scan normally makes no network call. After 24 hours the client checks again. If the API is unreachable (network error, timeout or 5xx), the tool keeps working with a warning for up to 7 days after the last successful check. A definite "invalid", "revoked" or "expired" answer deletes the cache and stops the tool at once.
-5. **What runs without a key:** `--help`, `--version`, `init`, `activate` and `licence` (shows where the key came from, masked, last check, valid until, grace state). `scan` and `scan-url` exit 2 with a message on how to set a key. The MCP server still starts and lists its tools; every tool call returns an error with the same message, so the agent can tell the user what to do.
-6. **Host: Google Cloud Run in us-central1**, request-based billing, max 1 instance, min 0, 1 vCPU, 2 GiB, request timeout 120 s, allow unauthenticated (auth is our key). The image is Node slim plus Playwright's Chromium headless shell only, aiming to stay under Artifact Registry's 0.5 GB free storage; old images are deleted. The service runs as its own service account with only Firestore access. Deployment is done by the owner from a script and a written guide; the guide starts with a $1 budget alert.
-7. **Keys:** `ll_` followed by 32 random base62 characters (about 190 bits). Firestore stores the SHA-256 of the key as the document id, never the key. Each key document holds the first 8 characters of the key (for display and `revoke`), a label (who it is for), created, expires (optional) and revoked (optional) dates. An admin script run on the owner's laptop with `gcloud auth application-default login` can `issue --label <text> [--expires YYYY-MM-DD]`, `list` and `revoke <prefix>`. `issue` prints the key once.
+1. **The server records, and the client makes the decisions.** `POST /v1/scan` returns a `SiteCapture` (requests, cookies, page text and HTML, links). The CLI runs the runtime rules on it with `evaluateCapture`, with the local intake and judgments. If the rules ran on the server, the client would have to send the intake answers.
+2. **Public URLs go to the API. Local URLs stay local.** The tool scans these with local Chromium: `localhost`, `*.localhost`, and IP literals in private, loopback or link-local ranges. `--local` (CLI) and `local: true` (MCP `scan_url`) make the scan local. If the API refuses a URL as private (for example, an internal hostname), the error tells the user to use `--local`.
+3. **The key is never in the project config.** `legal-lint.config.json` is committed. The key comes from `LEGAL_LINT_KEY`. If that is not set, it comes from `~/.legal-lint/key`, which `legal-lint activate <key>` writes (file mode 0600). If a config still has `licenceKey`, the tool refuses it. The message tells where to move the key.
+4. **Cache and grace.** The tool keeps a valid answer for 24 hours in `~/.legal-lint/licence.json`. The key of the cache is a hash of the licence key. Thus a scan usually makes no network call. After 24 hours, the client checks again. If the client cannot connect to the API (network error, timeout or 5xx), the tool continues to operate with a warning. This continues for a maximum of 7 days after the last good check. A clear "invalid", "revoked" or "expired" answer deletes the cache and stops the tool immediately.
+5. **The commands that run without a key:** `--help`, `--version`, `init`, `activate` and `licence`. `licence` shows the source of the key, the masked key, the last check, the date until which the key is valid, and the grace state. `scan` and `scan-url` give exit 2 with a message that tells how to set a key. The MCP server still starts and lists its tools. Each tool call returns an error with the same message. Thus the agent can tell the user what to do.
+6. **Host: Google Cloud Run in us-central1.** Request-based billing, a maximum of 1 instance, a minimum of 0, 1 vCPU, 2 GiB, a request timeout of 120 s. The service permits unauthenticated requests, because our key is the authentication. The image is Node slim and only the Chromium headless shell of Playwright. The objective is to stay below the free storage of 0.5 GB of Artifact Registry. Old images are deleted. The service runs as its own service account, with access only to Firestore. The owner does the deployment with a script and a written guide. The guide starts with a $1 budget alert.
+7. **Keys:** `ll_` and then 32 random base62 characters (approximately 190 bits). Firestore uses the SHA-256 of the key as the document id. It never keeps the key. Each key document has:
+   - the first 8 characters of the key (for display and for `revoke`),
+   - a label (the person who gets the key),
+   - the date of creation,
+   - the date of expiry (optional),
+   - the date of revocation (optional).
+
+   The owner runs an admin script on their laptop with `gcloud auth application-default login`. The script can do `issue --label <text> [--expires YYYY-MM-DD]`, `list` and `revoke <prefix>`. `issue` shows the key one time only.
 8. **Cost limits:**
-   - A hard cap of 1,500 scans per calendar month (UTC) for the whole service. A scan is capped at 60 seconds. Worst case, 1,500 scans use 90,000 vCPU-seconds and 180,000 GiB-seconds, half the free quota (180,000 and 360,000).
-   - Per key: 10 scans per hour and 50 per day (fixed UTC windows).
-   - Per IP, in memory (safe with one instance): 30 licence checks per hour and 10 failed authentications per hour. A scan without a valid key is refused with 401 before Chromium starts.
-   - At most 2 scans run at once; up to 4 wait; beyond that, 503 with `Retry-After`.
-   - A scan counts against the limits when Chromium starts, whether or not the page loads, since the compute is spent either way.
-   - When the monthly cap is used up, the API answers 503 with `reason: "monthly_budget"` and the CLI suggests `--local`.
+   - A hard limit of 1,500 scans for each calendar month (UTC) for the full service. A scan has a maximum of 60 seconds. In the worst case, 1,500 scans use 90,000 vCPU-seconds and 180,000 GiB-seconds. This is half of the free quota (180,000 and 360,000).
+   - For each key: 10 scans each hour and 50 scans each day (fixed UTC windows).
+   - For each IP address, in memory (this is safe with one instance): 30 licence checks each hour and 10 failed authentications each hour. The API refuses a scan without a valid key with 401 before Chromium starts.
+   - A maximum of 2 scans run at the same time. A maximum of 4 scans wait. After that, the API answers 503 with `Retry-After`.
+   - A scan counts against the limits when Chromium starts, also if the page does not load, because the compute is used in the two cases.
+   - When the service has used all of the monthly limit, the API answers 503 with `reason: "monthly_budget"`. The CLI then recommends `--local`.
    - All limits are environment variables.
 9. **SSRF protection, three layers:**
-   - *Input:* http or https only, no username or password in the URL, ports 80 and 443 only, and every address the hostname resolves to must be public unicast.
-   - *Egress proxy:* Chromium is launched with a proxy that runs inside the API process. Every connection Chromium makes, including redirects, subresources, iframes and websockets, goes through it. The proxy resolves the hostname itself, refuses if any address is not public unicast, and connects to the address it checked, so DNS rebinding cannot swap it. Refused ranges include loopback, private, link-local (Cloud Run's metadata server at 169.254.169.254), unique-local and Google-internal IPv6, carrier-grade NAT, multicast, reserved and unspecified, plus IPv4 addresses embedded in IPv6 (mapped, 6to4, Teredo).
-   - *Chromium flags:* `--proxy-bypass-list=<-loopback>` removes Chromium's built-in exception that sends localhost around the proxy. WebRTC is limited to proxied traffic and QUIC is disabled, so nothing leaves outside the proxy.
-10. **API URL:** the client reads `LEGAL_LINT_API_URL`. The default is set in code after the first deploy, when Cloud Run gives the URL. Until then, a missing URL is a clear error.
+   - *Input:* only http or https, no username or password in the URL, only ports 80 and 443. Each address that the hostname resolves to must be public unicast.
+   - *Egress proxy:* the API starts Chromium with a proxy that runs in the API process. Each connection that Chromium makes goes through the proxy. This includes redirects, subresources, iframes and websockets. The proxy resolves the hostname itself. It refuses the connection if an address is not public unicast. It connects to the address that it checked. Thus DNS rebinding cannot change the address. The refused ranges are: loopback, private, link-local (the metadata server of Cloud Run at 169.254.169.254), unique-local and Google-internal IPv6, carrier-grade NAT, multicast, reserved and unspecified. IPv4 addresses in IPv6 (mapped, 6to4, Teredo) are also refused.
+   - *Chromium flags:* `--proxy-bypass-list=<-loopback>` removes the built-in exception of Chromium that sends localhost around the proxy. WebRTC can use only traffic through the proxy. QUIC is disabled. Thus no traffic goes out outside the proxy.
+10. **API URL:** the client reads `LEGAL_LINT_API_URL`. The default goes into the code after the first deploy, when Cloud Run gives the URL. Until then, a missing URL gives a clear error.
 11. **Tests:** see Testing.
 
 ## Architecture
 
 ```
 packages/
-  core/   + src/remote.ts         wire format: zod schemas for the API's requests and responses, SiteCapture included
+  core/   + src/remote.ts         wire format: zod schemas for the requests and responses of the API, with SiteCapture
   cli/    + src/licence/          key lookup, cache, grace, API client, the gate
           + src/remote-scan.ts    POST /v1/scan, validate the capture, then evaluateCapture locally
           ~ program.ts            gate on scan and scan-url; new activate and licence commands; --local
-          ~ mcp/server.ts         gate on every tool; scan_url gets `local`
+          ~ mcp/server.ts         gate on each tool; scan_url gets `local`
   api/    (new, private, not published to npm)
-          src/app.ts              Hono app: routes, auth, limits; dependencies injected
+          src/app.ts              Hono app: routes, auth, limits; dependencies are injected
           src/store.ts            KeyStore + UsageStore interfaces; memory and Firestore implementations
-          src/limits.ts           per-IP limiter, scan queue
-          src/egress/policy.ts    is this address allowed (ipaddr.js)
+          src/limits.ts           limiter for each IP address, scan queue
+          src/egress/policy.ts    decides if an address is permitted (ipaddr.js)
           src/egress/proxy.ts     HTTP and CONNECT proxy that resolves, checks and connects
-          src/scan.ts             launch Chromium with the proxy and flags, captureSite with a 60 s budget
+          src/scan.ts             starts Chromium with the proxy and flags, captureSite with a budget of 60 s
           src/server.ts           entry point for Cloud Run (PORT)
           src/admin.ts            issue, list, revoke
           Dockerfile, deploy.sh, DEPLOY.md
 ```
 
-Core gains no licence logic. The API package reuses `captureSite` from core with an injected browser.
+Core gets no licence logic. The API package uses `captureSite` from core with an injected browser.
 
 ## API
 
 | Method and path | Auth | Body | Answer |
 |---|---|---|---|
-| `POST /v1/licence` | none (IP limited) | `{ key, version }` | 200 `{ valid: true, expiresAt }` or 200 `{ valid: false, reason: "unknown" \| "revoked" \| "expired" }` |
-| `POST /v1/scan` | `Authorization: Bearer <key>` | `{ url, version }` | 200 `{ capture }`; 400 bad or private URL; 401 bad key; 429 key limit (`Retry-After`); 503 busy or `monthly_budget` |
+| `POST /v1/licence` | none (limit for each IP) | `{ key, version }` | 200 `{ valid: true, expiresAt }` or 200 `{ valid: false, reason: "unknown" \| "revoked" \| "expired" }` |
+| `POST /v1/scan` | `Authorization: Bearer <key>` | `{ url, version }` | 200 `{ capture }`; 400 incorrect or private URL; 401 incorrect key; 429 key limit (`Retry-After`); 503 busy or `monthly_budget` |
 | `GET /healthz` | none | | 200 |
 
-Errors are `{ error: { reason, message } }`. Bodies over 4 KB are refused. Nothing is logged except the key prefix, the URL host, the outcome and the duration.
+Errors are `{ error: { reason, message } }`. The API refuses bodies that are larger than 4 KB. The API logs only the key prefix, the URL host, the outcome and the duration.
 
 ## Client flow
 
-1. Gated command starts → find key (env, then file). None → exit 2 with instructions.
-2. Cache for this key checked within 24 hours and valid → go.
-3. Otherwise `POST /v1/licence`. Valid → write cache and go. Invalid → delete cache, exit 2 with the reason.
-4. API unreachable → last success within 7 days → go with a warning on stderr; otherwise exit 2.
-5. `scan-url`: local or remote per decision 2. Remote → `POST /v1/scan`, validate the capture with zod, `evaluateCapture` with local intake and judgments, then the usual output and HTML report.
+1. A gated command starts. The client finds the key (first the environment, then the file). If there is no key, exit 2 with instructions.
+2. If the cache for this key was checked less than 24 hours ago and is valid, continue.
+3. If not, `POST /v1/licence`. If the key is valid, write the cache and continue. If the key is not valid, delete the cache. Then exit 2 with the reason.
+4. If the client cannot connect to the API: if the last good check was less than 7 days ago, continue with a warning on stderr. If not, exit 2.
+5. `scan-url`: local or remote, as decision 2 tells. For a remote scan: `POST /v1/scan`, validate the capture with zod, run `evaluateCapture` with the local intake and judgments. Then give the usual output and the HTML report.
 
 ## Testing
 
-- **Egress policy:** a table of addresses (IPv4 and IPv6, every refused range, embedded IPv4, public examples) with the expected answer.
-- **Proxy, with real sockets:** an "allowed" fixture server and an "internal" server on 127.0.0.1, with a test policy that allows only the fixture port. Through Chromium and the proxy, a redirect, an image, an iframe and a websocket pointing at the internal server are all refused, and the internal server receives zero connections. A resolver that answers public first and private second (rebinding) is refused at connect time.
-- **API (Hono, in memory, no port):** licence answers for valid, unknown, revoked and expired keys; scan auth; per-key hour and day limits; per-IP limits; the busy queue; the monthly cap; body size; private URL refusals; nothing logged that contains the full key.
-- **Firestore store:** the same contract tests as the memory store, run against the Firestore emulator when `FIRESTORE_EMULATOR_HOST` is set, and skipped otherwise. The milestone report will say whether they ran.
-- **Licence client:** env beats file; 24-hour cache; recheck after 24 hours; 7-day grace on network errors and 5xx but not on "invalid"; revoked clears the cache; `licenceKey` in project config is refused; the request body is exactly `{ key, version }`.
-- **CLI and MCP, keyed and keyless:** keyless `scan` and `scan-url` exit 2 and `init` still works; the keyless MCP server lists tools and every call returns the licence error; keyed runs as today. Existing tests run keyed through a setup file that writes a fresh cache to a temporary `LEGAL_LINT_HOME`.
-- **End to end:** the real API app in process (memory store, test egress policy, offline crawl) scans a runtime fixture, and the CLI's remote findings equal its local findings for the same fixture.
-- **Privacy:** with a fresh cache, a repo scan makes no outbound call. With a stale cache, it makes exactly one, to the API, whose body is `{ key, version }` and contains no file path or content.
+- **Egress policy:** a table of addresses with the expected answer. The table has IPv4 and IPv6, each refused range, IPv4 in IPv6, and public examples.
+- **Proxy, with real sockets:** a "permitted" fixture server and an "internal" server on 127.0.0.1, with a test policy that permits only the fixture port. Through Chromium and the proxy, the proxy refuses a redirect, an image, an iframe and a websocket that point to the internal server. The internal server gets zero connections. The proxy refuses, at connect time, a resolver that first answers with a public address and then with a private address (rebinding).
+- **API (Hono, in memory, no port):** licence answers for valid, unknown, revoked and expired keys; scan auth; key limits for the hour and the day; limits for each IP address; the busy queue; the monthly limit; body size; refusals of private URLs; no log contains the full key.
+- **Firestore store:** the same contract tests as the memory store. They run on the Firestore emulator when `FIRESTORE_EMULATOR_HOST` is set. If not, they do not run. The milestone report will tell if they ran.
+- **Licence client:** the environment variable is more important than the file; the 24-hour cache; a new check after 24 hours; a 7-day grace on network errors and 5xx, but not on "invalid"; "revoked" clears the cache; the tool refuses `licenceKey` in the project config; the request body is exactly `{ key, version }`.
+- **CLI and MCP, with and without a key:** without a key, `scan` and `scan-url` give exit 2, and `init` still operates. Without a key, the MCP server lists the tools and each call returns the licence error. With a key, all operates as before. The tests that exist run with a key through a setup file. The setup file writes a new cache to a temporary `LEGAL_LINT_HOME`.
+- **End to end:** the real API app runs in the process (memory store, test egress policy, offline crawl). It scans a runtime fixture. The remote findings of the CLI must be the same as its local findings for the same fixture.
+- **Privacy:** with a new cache, a repo scan makes no outbound call. With an old cache, it makes exactly one call, to the API. The body of this call is `{ key, version }` and contains no file path or content.
 
 ## Documentation
 
-- README: keys (`activate`, `LEGAL_LINT_KEY`), what leaves the machine (key and version once a day; the URL for remote scans), `--local`.
-- `packages/api/DEPLOY.md`: budget alert first, project setup, Firestore, service account, deploy, issue the first key, check image size, find the client-IP header layout, and what can still cost money.
-- DECISIONS.md: one line per non-obvious choice above. LEGAL_REVIEW.md: new items (below).
+- README: keys (`activate`, `LEGAL_LINT_KEY`); the data that goes out of the machine (key and version one time each day; the URL for remote scans); `--local`.
+- `packages/api/DEPLOY.md`: first the budget alert, then project setup, Firestore, service account, deploy, issue the first key, examine the image size, find the layout of the client IP header, and the items that can still cost money.
+- DECISIONS.md: one line for each decision above that is not obvious. LEGAL_REVIEW.md: new items (below).
 
 ## For the lawyer (LEGAL_REVIEW.md)
 
-- The hosted service loads third-party sites on a user's request. Does this need terms of use, or a rule that users only scan sites they own or may test?
-- The privacy wording in the README about what the API receives and logs.
+- The hosted service loads sites of other persons when a user asks. Does this need terms of use, or a rule that users scan only sites that they own or have permission to test?
+- The privacy text in the README about the data that the API receives and logs.
 
-## Out of scope
+## Not in scope
 
-Billing, signup, a dashboard, batch scans (milestone 3), robots.txt, a revocation list beyond the API's own check, and multiple instances.
+Billing, signup, a dashboard, batch scans (milestone 3), robots.txt, a revocation list in addition to the check of the API, and more than one instance.
 
 ## Risks
 
-- A budget alert only sends email; it does not stop billing. The real limits are max 1 instance and the monthly cap.
-- Small charges remain possible if the image is over 0.5 GB, or build minutes or egress exceed their free allowance. The deploy guide checks each one.
-- The client-IP header layout on Cloud Run is verified after the first deploy; until then the per-IP limits may key on the wrong address. Per-key limits and the monthly cap do not depend on it.
+- A budget alert only sends email. It does not stop the billing. The real limits are a maximum of 1 instance and the monthly limit.
+- Small charges are still possible in these conditions: the image is larger than 0.5 GB, or the build minutes or the egress go above their free allowance. The deploy guide examines each of these items.
+- We will verify the layout of the client IP header on Cloud Run after the first deploy. Until then, the limits for each IP address can use the incorrect address. The limits for each key and the monthly limit do not depend on it.

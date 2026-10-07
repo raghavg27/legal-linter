@@ -1,0 +1,1 @@
+{ "description": "SendGrid marketing send with footer, address and an ASM unsubscribe group", "mode": "static", "expect": [] }

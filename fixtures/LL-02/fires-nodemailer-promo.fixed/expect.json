@@ -1,0 +1,1 @@
+{ "description": "fires-nodemailer-promo after the fix guidance: postal address in the footer, recipients filtered on unsubscribed", "mode": "static", "expect": [] }

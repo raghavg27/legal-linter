@@ -1,0 +1,6 @@
+{
+  "intake": { "countries": ["US"], "sendsMarketingEmail": true },
+  "judgments": {
+    "LL-02-56f31f0791": { "answer": "transactional", "contentHash": "9154502ec67e0397", "answeredAt": "2026-10-07T10:00:00.000Z" }
+  }
+}

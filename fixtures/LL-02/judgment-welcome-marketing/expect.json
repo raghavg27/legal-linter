@@ -1,0 +1,16 @@
+{
+  "description": "The welcome email after the host agent answered \"marketing\": an open finding at high confidence",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "high",
+      "evidence": [
+        { "file": "lib/email.ts", "line": 5 },
+        { "absent": "Template has no unsubscribe link" },
+        { "absent": "Template has no postal address" },
+        { "absent": "No unsubscribe route or handler found" }
+      ]
+    }
+  ]
+}

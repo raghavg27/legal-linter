@@ -1,0 +1,1 @@
+{ "description": "The welcome email after the host agent answered \"transactional\": dropped", "mode": "static", "expect": [] }

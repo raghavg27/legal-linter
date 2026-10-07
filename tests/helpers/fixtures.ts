@@ -4,7 +4,7 @@ import type { Confidence, Finding, FindingStatus } from '@legal-lint/core';
 
 export const FIXTURES_DIR = path.resolve(import.meta.dirname, '../../fixtures');
 
-export type FixtureCategory = 'fires' | 'pass' | 'near-miss' | 'intake';
+export type FixtureCategory = 'fires' | 'pass' | 'near-miss' | 'intake' | 'judgment';
 
 export type ExpectedEvidence = { file: string; line: number } | { requestUrl: string } | { absent: string };
 
@@ -27,7 +27,7 @@ export interface Fixture {
   expect: ExpectedFinding[];
 }
 
-const CATEGORIES: FixtureCategory[] = ['fires', 'pass', 'near-miss', 'intake'];
+const CATEGORIES: FixtureCategory[] = ['fires', 'pass', 'near-miss', 'intake', 'judgment'];
 
 function categoryOf(name: string): FixtureCategory {
   const base = name.replace(/\.fixed$/, '');

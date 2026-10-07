@@ -1,0 +1,71 @@
+# Fix guidance for a coding agent. Every step says why, so the agent can adapt
+# when the repo does not match the expected shape.
+ruleId: LL-02
+fixType: full
+goal: >-
+  Every marketing email carries a working unsubscribe link and the sender's
+  postal address, unsubscribes are recorded, and every marketing send skips
+  people who have unsubscribed. Transactional email (receipts, password
+  resets) stays as it is.
+
+steps:
+  - title: Add a shared email footer
+    why: >-
+      A single footer component used by every marketing template means no
+      template can ship without the unsubscribe link and address, and the
+      re-scan finds both in each template.
+    instructions: >-
+      Create an EmailFooter component (React Email, MJML partial or an HTML
+      snippet, matching what the templates use) with an "Unsubscribe" link to
+      the unsubscribe route with a per-recipient token, and the company's
+      postal address (a placeholder such as [COMPANY POSTAL ADDRESS] if the
+      owner has not given it). Render it at the bottom of every marketing
+      template. For provider-hosted templates, add the provider's unsubscribe
+      placeholder instead: Resend `{{{RESEND_UNSUBSCRIBE_URL}}}`, SendGrid
+      `<%asm_group_unsubscribe_raw_url%>`, Postmark `{{{ pm:unsubscribe }}}`,
+      Mailgun `%unsubscribe_url%`.
+
+  - title: Add a one-click unsubscribe route
+    why: >-
+      The link has to work without a login, and the choice has to be stored
+      somewhere the sender reads, or people keep receiving email after they
+      unsubscribe.
+    instructions: >-
+      Add a route (GET shows a confirmation, POST performs it) at /unsubscribe
+      that verifies a signed token identifying the recipient and sets an
+      `unsubscribed` flag (or inserts into a `suppressions` table) for that
+      email address. Use a column or table name containing "unsubscribed" or
+      "suppress" so the re-scan can match the writer and the reader.
+    variants:
+      next-app: Create app/unsubscribe/page.tsx for the confirmation and app/api/unsubscribe/route.ts for the POST.
+      next-pages: Create pages/unsubscribe.tsx and pages/api/unsubscribe.ts.
+      node-server: Register GET and POST /unsubscribe on the server router.
+      remix: Create app/routes/unsubscribe.tsx with a loader and an action.
+
+  - title: Check the suppression list before every marketing send
+    why: >-
+      An unsubscribe link only matters if the next send respects it.
+    instructions: >-
+      In the code that builds the marketing recipient list (or in a shared
+      send wrapper), filter out addresses whose `unsubscribed` flag is set or
+      that appear in `suppressions`, using the same name the unsubscribe route
+      writes. If sending through Resend audiences/broadcasts, SendGrid ASM
+      groups or a Postmark broadcast stream, the provider can handle this;
+      pass the audience or group id on every marketing send.
+
+  - title: Add List-Unsubscribe headers
+    why: >-
+      Gmail and Yahoo require one-click unsubscribe headers from bulk senders,
+      and mail clients show a native unsubscribe button with them.
+    instructions: >-
+      On marketing sends, set `List-Unsubscribe: <https://your-domain/api/unsubscribe?token=...>`
+      and `List-Unsubscribe-Post: List-Unsubscribe=One-Click`, using the same
+      token as the footer link.
+
+doneWhen:
+  - "Every marketing template renders an unsubscribe link and a postal address."
+  - "An unsubscribe route records the choice under a name containing unsubscribed or suppress."
+  - "Every marketing send filters out unsubscribed addresses, or uses a provider-managed audience or group."
+  - "A repo re-scan reports no LL-02 finding."
+
+ownerSteps: []

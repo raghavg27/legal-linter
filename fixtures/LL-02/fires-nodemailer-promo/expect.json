@@ -1,0 +1,15 @@
+{
+  "description": "Nodemailer promo with an unsubscribe link and route, but no postal address and a recipient query that ignores the unsubscribed flag",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "medium",
+      "evidence": [
+        { "file": "server/promo.js", "line": 9 },
+        { "absent": "Template has no postal address" },
+        { "absent": "The send path does not read the unsubscribe list" }
+      ]
+    }
+  ]
+}

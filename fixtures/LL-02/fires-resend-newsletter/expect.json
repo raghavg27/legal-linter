@@ -1,0 +1,16 @@
+{
+  "description": "Resend newsletter to every subscriber: React Email template with no footer, no unsubscribe route",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "open",
+      "confidence": "medium",
+      "evidence": [
+        { "file": "app/api/newsletter/send/route.ts", "line": 8 },
+        { "absent": "Template has no unsubscribe link" },
+        { "absent": "Template has no postal address" },
+        { "absent": "No unsubscribe route or handler found" }
+      ]
+    }
+  ]
+}

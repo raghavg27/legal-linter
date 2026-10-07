@@ -1,0 +1,16 @@
+{
+  "description": "A welcome email with no footer: could be onboarding or marketing, so the host agent is asked",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "needs_judgment",
+      "confidence": "medium",
+      "evidence": [
+        { "file": "lib/email.ts", "line": 5 },
+        { "absent": "Template has no unsubscribe link" },
+        { "absent": "Template has no postal address" },
+        { "absent": "No unsubscribe route or handler found" }
+      ]
+    }
+  ]
+}

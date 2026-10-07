@@ -1,0 +1,16 @@
+{
+  "description": "The newsletter with no config: needs the marketing-email and countries answers",
+  "mode": "static",
+  "expect": [
+    {
+      "status": "needs_intake",
+      "confidence": "medium",
+      "evidence": [
+        { "file": "app/api/newsletter/send/route.ts", "line": 8 },
+        { "absent": "Template has no unsubscribe link" },
+        { "absent": "Template has no postal address" },
+        { "absent": "No unsubscribe route or handler found" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1 @@
+{ "description": "A password reset email with no unsubscribe link or address: transactional, so not this rule", "mode": "static", "expect": [] }

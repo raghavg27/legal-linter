@@ -1,0 +1,14 @@
+# Copied word for word from RULEBOOK.md (tests/rulebook-sync.test.ts enforces this).
+# doesNotApplyIf and exposureKind are ours, written from the rulebook text; see LEGAL_REVIEW.md.
+ruleId: LL-02
+name: "Marketing email with no unsubscribe or postal address"
+law: "CAN-SPAM Act, 15 U.S.C. §7704"
+trap: "Newsletters or promo emails go out without a working unsubscribe link, a physical address, or a suppression check before sending."
+appliesWhen: "Commercial email to US recipients. Transactional email (receipts, password resets) is exempt."
+doesNotApplyIf: "The email is transactional (a receipt, password reset or account notice), or no recipients are in the US."
+exposure: "Up to $53,088 per email, the FTC's 2025 inflation-adjusted cap."
+exposureKind: statutory_max
+detectionConfidence: "High for a missing footer; Medium for marketing vs transactional"
+sources: []
+lastReviewed: null
+reviewStatus: draft

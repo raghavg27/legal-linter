@@ -1,0 +1,1 @@
+{ "description": "fires-resend-newsletter after the fix guidance: shared footer, unsubscribe route, suppression filter, List-Unsubscribe headers", "mode": "static", "expect": [] }

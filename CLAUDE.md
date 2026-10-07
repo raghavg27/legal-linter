@@ -92,6 +92,7 @@ Write detectors for the general case. Never write special code for one fixture. 
 - A finding explanation has exactly two sentences. It must not contain violat*, (non-)compliant/compliance, illegal, unlawful, breach* or guarantee* (`tests/helpers/wording.ts`). A finding tells what the detector saw and the risk. It never tells the user that they break the law. It never promises that a fix makes them compliant.
 - Exposure figures stay exactly as in the rulebook, with the label `statutory maximum`, `named case` or `consequence`. Do not correct or add to legal figures from memory. Add each doubtful item, and each legal text that we wrote ourselves, to `LEGAL_REVIEW.md`.
 - Each report ends with the disclaimer in `core/src/engine.ts`.
+- Write docs, diagrams, comments and `fix.yaml` text in ASD-STE100 style. Do not change `RULEBOOK.md`, `legal.yaml`, quoted legal or UI text, or "should" to "must".
 - The HTML report is self-contained. It has no scripts and no external fonts, because a report that loads Google Fonts will cause an LL-01 finding.
 
 ## Privacy promise (tested)

@@ -10,6 +10,8 @@ export interface ApiConfig {
   trustedHops: number;
   pageTimeoutMs: number;
   budgetMs: number;
+  /** Hard limit for one scan. */
+  deadlineMs: number;
   /** Temporary, for finding the client-IP header layout after the first deploy. */
   logForwardedFor: boolean;
 }
@@ -34,6 +36,7 @@ export function readConfig(env: NodeJS.ProcessEnv): ApiConfig {
     trustedHops: Math.max(1, int(env.TRUSTED_PROXY_HOPS, 1)),
     pageTimeoutMs: int(env.PAGE_TIMEOUT_MS, 15_000),
     budgetMs: int(env.SCAN_BUDGET_MS, 40_000),
+    deadlineMs: int(env.SCAN_DEADLINE_MS, 60_000),
     logForwardedFor: env.LOG_FORWARDED_FOR === '1',
   };
 }

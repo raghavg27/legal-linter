@@ -25,6 +25,8 @@ export async function createScanner(opts: {
   toolVersion: string;
   pageTimeoutMs?: number;
   budgetMs?: number;
+  /** Hard limit for one scan, so a frozen page cannot hold a slot. */
+  deadlineMs?: number;
 }): Promise<Scanner> {
   const proxy = await startEgressProxy({ policy: opts.policy, resolve: opts.resolve });
   let browser: Promise<Browser> | null = null;
@@ -50,6 +52,7 @@ export async function createScanner(opts: {
         toolVersion: opts.toolVersion,
         timeoutMs: opts.pageTimeoutMs ?? 15_000,
         budgetMs: opts.budgetMs ?? 40_000,
+        deadlineMs: opts.deadlineMs ?? 60_000,
       });
     },
     async closeBrowserForTest() {

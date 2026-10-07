@@ -31,6 +31,8 @@ beforeAll(async () => {
     '/iframe': `<iframe src="http://${target}/"></iframe>`,
     '/ws': `<script>new WebSocket('ws://${target}/');</script>`,
     '/fetch': `<script>fetch('http://${target}/api').catch(() => {});</script>`,
+    // Freezes the page's main thread once it has loaded, so reading the page never returns.
+    '/hang': `<script>addEventListener('load', () => setTimeout(() => { for (;;) {} }, 0));</script>`,
   };
   site = await listen('127.0.0.1', (req, res) => {
     if (req.url === '/redirect') {
@@ -102,6 +104,19 @@ describe('hosted scanner egress', () => {
       expect(s.proxy.refused).toContain(`127.0.0.1:${site.port}`);
     } finally {
       site.server.off('connection', counter);
+      await s.close();
+    }
+  });
+
+  it('stops a scan at its hard deadline and frees the browser for the next one', async () => {
+    const s = await createScanner({ policy: allowLocalV4, resolve: noDns, toolVersion: VERSION, pageTimeoutMs: 5_000, deadlineMs: 3_000 });
+    try {
+      const started = Date.now();
+      await expect(s.scan(`http://127.0.0.1:${site.port}/hang`)).rejects.toThrow(/stopped after 3 s/);
+      expect(Date.now() - started).toBeLessThan(10_000);
+      const capture = await s.scan(`http://127.0.0.1:${site.port}/`);
+      expect(capture.pages[0]?.status).toBe(200);
+    } finally {
       await s.close();
     }
   });

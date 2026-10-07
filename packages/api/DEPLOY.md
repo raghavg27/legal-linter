@@ -161,6 +161,7 @@ gcloud run services update legal-lint-api --region us-central1 --update-env-vars
 | `TRUSTED_PROXY_HOPS` | 1 | `X-Forwarded-For` entries added by Google's proxies (section 6). |
 | `PAGE_TIMEOUT_MS` | 15000 | Load timeout per page. |
 | `SCAN_BUDGET_MS` | 40000 | No new page is started after this long. |
+| `SCAN_DEADLINE_MS` | 60000 | Hard limit for one scan. A page that freezes is closed and the scan is reported as failed. |
 | `LOG_FORWARDED_FOR` | unset | `1` logs the raw `X-Forwarded-For` header. Only for section 6. |
 
 ## 9. Testing the Firestore store

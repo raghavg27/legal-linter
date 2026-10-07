@@ -15,6 +15,7 @@ const scanner = await createScanner({
   toolVersion: pkg.version,
   pageTimeoutMs: config.pageTimeoutMs,
   budgetMs: config.budgetMs,
+  deadlineMs: config.deadlineMs,
 });
 const app = createApp({ keys: store, usage: store, scanner, policy: publicWebOnly, resolve: systemResolve, config });
 const server = serve({ fetch: app.fetch, port: Number(process.env.PORT ?? 8080) });

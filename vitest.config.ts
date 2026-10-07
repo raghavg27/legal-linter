@@ -4,5 +4,6 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts', 'packages/*/src/**/*.test.ts'],
     testTimeout: 30_000,
+    setupFiles: ['tests/setup/licence.ts'],
   },
 });

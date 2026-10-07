@@ -12,6 +12,7 @@ How to work on Legal Lint without breaking its promises. Read `README.md` for wh
 | `KNOWN_ISSUES.md` | Open bugs, limits and deferred work | You find a problem you are not fixing now, or you fix one listed there |
 | `CHANGELOG.md` | What changed in each release | Every user-visible change, under "Unreleased" |
 | `RELEASING.md` | How to publish the CLI and redeploy the API | The release steps change |
+| `docs/architecture.md` | Mermaid diagrams of each flow, with the file that owns it | You change a flow a diagram shows (order of checks, a status, what is sent, a limit), or rename a file it names. Add a diagram for a new flow. |
 | `docs/adding-a-rule.md` | The recipe for a new rule | The rule interface or the fixture harness changes |
 | `packages/api/DEPLOY.md` | First deploy of the hosted API, and its limits | Deploy steps or environment variables change |
 | `packages/api/OPERATIONS.md` | Running the hosted API: keys, errors, logs, usage | A new error reason, log field or admin command |
@@ -62,6 +63,7 @@ You will find out when you break these, but it is quicker to know them:
 - A finding explanation is exactly two sentences and avoids words that conclude the user breaks the law (`tests/helpers/wording.ts`).
 - A repo scan sends nothing but the licence check (`tests/privacy.test.ts`).
 - Runtime tests never touch the network. Fixture sites are served from 127.0.0.1.
+- Every file named in `docs/architecture.md` exists (`tests/architecture-doc.test.ts`). The test cannot tell whether a diagram's steps still match the code, so check that yourself when you change a flow.
 - The deploy script cannot loosen the free-tier limits, and the Docker image's package versions must match `package.json` (`packages/api/src/deploy-files.test.ts`).
 
 ## Rules no test can enforce

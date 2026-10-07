@@ -127,3 +127,4 @@ One line per non-obvious choice, and why.
 - **Playwright is an optional dependency of the CLI**, external to the bundle and loaded with a dynamic import, so `npx legal-lint` installs fast. URL scans print an install hint when it is missing.
 - **The crawler's user agent identifies the tool:** `Mozilla/5.0 (compatible; LegalLint/<version>; +https://www.npmjs.com/package/legal-lint)`.
 - **Runtime tests never touch the network.** Fixtures are served from 127.0.0.1, and every other request is still recorded but answered locally with an empty response.
+- **Diagrams are Mermaid text in `docs/architecture.md`, not image files.** GitHub renders them, an agent reads them as plain text, and a change shows up in the diff. One file keeps them findable; each diagram names the file that owns its behaviour, and `tests/architecture-doc.test.ts` checks those files exist.

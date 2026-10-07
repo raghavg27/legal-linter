@@ -28,6 +28,8 @@ node packages/cli/dist/bin.js scan <path>   # run the built CLI
 
 ## Architecture
 
+`docs/architecture.md` has Mermaid diagrams of every flow below (packages, repo scan, finding status, URL scan routing, the API request pipeline, SSRF layers, licence gate, data egress, the MCP agent loop, judgments, rule anatomy, fixtures). Read the relevant one before changing a flow, and update it in the same commit. `tests/architecture-doc.test.ts` fails when a diagram names a file that no longer exists.
+
 Packages in `packages/`:
 
 - **core** (`@legal-lint/core`, private, consumed as TS source through `exports`). Holds the engine (`engine.ts`: `scanRepo`, `scanSite`, `evaluateCapture`), the types and zod schemas, intake/config (`intake.ts`), judgments, fix-guidance selection, preflight topic matching, the text/HTML reports, the Playwright crawler (`runtime/crawler.ts`), static helpers (`static/`: TS compiler API ASTs, repo index, file kinds, routes) and the SSRF address checks (`net/address.ts`).

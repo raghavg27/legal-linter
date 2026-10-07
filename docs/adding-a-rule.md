@@ -19,7 +19,7 @@ packages/rules/src/LL-0N-<slug>/
   runtime.ts    detectRuntime(site, ctx), if the rule has runtime detection
 ```
 
-Copy the shape of an existing rule. `LL-03-session-replay` has both modes; `LL-05-dmca-agent` shows intake-driven applicability and absence evidence.
+Diagram 11 in `docs/architecture.md` shows how these files come together, and diagram 3 shows how the engine turns a detector's result into a status. Copy the shape of an existing rule. `LL-03-session-replay` has both modes; `LL-05-dmca-agent` shows intake-driven applicability and absence evidence.
 
 ### index.ts
 

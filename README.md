@@ -103,6 +103,8 @@ pnpm build:api   # bundles the hosted API to packages/api/dist
 
 The hosted service (licence checks and public URL scans) lives in `packages/api`. To deploy it, follow `packages/api/DEPLOY.md`.
 
+How the pieces fit together, as diagrams: `docs/architecture.md`.
+
 Before changing code, read `CONTRIBUTING.md`: it lists which document to update for each kind of change. Adding a rule: `docs/adding-a-rule.md`. Releasing: `RELEASING.md`. Open bugs and limits: `KNOWN_ISSUES.md`.
 
 Each rule lives in `packages/rules/src/<rule>/` with two reviewable data files: `legal.yaml` (copied from `RULEBOOK.md`; a test keeps them in sync) and `fix.yaml` (guidance for coding agents). Fixtures live in `fixtures/<rule>/`, with an `expect.json` in each:

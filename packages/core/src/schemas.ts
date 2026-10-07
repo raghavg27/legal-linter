@@ -86,7 +86,12 @@ export const configSchema = z.object({
       }),
     )
     .optional(),
-  licenceKey: z.string().optional(),
+  // The config is committed, so a key here would leak. Refused with directions instead.
+  licenceKey: z
+    .never({
+      error: 'Remove licenceKey: this file is committed, so the key would leak. Set LEGAL_LINT_KEY or run `legal-lint activate <key>` instead.',
+    })
+    .optional(),
 });
 
 export type LegalText = z.infer<typeof legalTextSchema>;

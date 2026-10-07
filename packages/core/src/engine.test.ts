@@ -1,7 +1,11 @@
+import { mkdtemp, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { defineRule } from './define-rule.ts';
 import { evaluateCapture } from './engine.ts';
 import { findingId } from './finding-id.ts';
+import { ConfigError, loadConfig } from './intake.ts';
 import { contentHash } from './judgments.ts';
 import { pickFollowLinks } from './runtime/crawler.ts';
 import type { PageCapture, RawFinding, SiteCapture } from './types.ts';
@@ -114,5 +118,14 @@ describe('pickFollowLinks', () => {
     ]);
     expect(pickFollowLinks(start, 2)).toEqual(['https://a.test/pricing', 'https://a.test/legal/dmca']);
     expect(pickFollowLinks(start, 0)).toEqual([]);
+  });
+});
+
+describe('licenceKey in the project config', () => {
+  it('is refused with a message saying where the key belongs', async () => {
+    const dir = await mkdtemp(path.join(tmpdir(), 'legal-lint-cfg-'));
+    await writeFile(path.join(dir, 'legal-lint.config.json'), JSON.stringify({ licenceKey: 'll_abc' }));
+    await expect(loadConfig(dir)).rejects.toThrow(/LEGAL_LINT_KEY|legal-lint activate/);
+    await expect(loadConfig(dir)).rejects.toBeInstanceOf(ConfigError);
   });
 });

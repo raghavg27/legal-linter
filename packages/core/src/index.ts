@@ -18,6 +18,17 @@ export {
   mergeIntake,
   updateConfigFile,
 } from './intake.ts';
+export {
+  API_ERROR_REASONS,
+  apiErrorSchema,
+  licenceRequestSchema,
+  licenceResponseSchema,
+  scanRequestSchema,
+  scanResponseSchema,
+  siteCaptureSchema,
+  type ApiErrorReason,
+  type LicenceResponse,
+} from './remote.ts';
 export { formatHtml } from './report/html.ts';
 export { formatText } from './report/text.ts';
 export { defaultReportPath, REPORT_DIR, writeHtmlReport } from './report/write-html.ts';

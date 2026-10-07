@@ -14,6 +14,8 @@ export interface CaptureOptions {
   offline?: boolean;
   /** Pages to visit including the start page. Extra pages are same-origin links that rules care about. Default 5. */
   maxPages?: number;
+  /** Stop starting new pages once this many milliseconds have passed since the crawl began. The hosted API uses it to cap a scan's cost. */
+  budgetMs?: number;
 }
 
 /** Links worth following from the start page: pricing for LL-04, copyright/DMCA for LL-05, legal pages generally. */
@@ -154,10 +156,12 @@ export async function captureSite(url: string, opts: CaptureOptions): Promise<Si
     }
     const timeout = opts.timeoutMs ?? 30_000;
     const offline = Boolean(opts.offline);
+    const started = Date.now();
     const start = await capturePage(context, url, timeout, offline);
     const pages = [start];
     if (!start.error) {
       for (const next of pickFollowLinks(start, (opts.maxPages ?? 5) - 1)) {
+        if (opts.budgetMs !== undefined && Date.now() - started >= opts.budgetMs) break;
         pages.push(await capturePage(context, next, timeout, offline));
       }
     }

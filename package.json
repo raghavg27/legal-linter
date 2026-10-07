@@ -13,6 +13,7 @@
     "build:api": "pnpm --filter @legal-lint/api build"
   },
   "devDependencies": {
+    "@hono/node-server": "2.1.3",
     "@legal-lint/core": "workspace:*",
     "@legal-lint/rules": "workspace:*",
     "@modelcontextprotocol/client": "2.3.1",

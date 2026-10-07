@@ -11,7 +11,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { scanRepo } from '@legal-lint/core';
 import { rules } from '@legal-lint/rules';
 import { startServer } from '../packages/cli/src/mcp/serve.ts';
+import { run } from '../packages/cli/src/program.ts';
 import { FIXTURES_DIR } from './helpers/fixtures.ts';
+import { makeHome, TEST_KEY } from './helpers/licence.ts';
 
 // Product promise: the user's source code never leaves their machine.
 // Every outbound channel is intercepted during a repo scan; anything sent must
@@ -72,7 +74,7 @@ describe('privacy', () => {
     const report = await scanRepo(root, { rules, toolVersion: '0.0.0-test' });
     expect(report.findings.length).toBeGreaterThan(0);
     expect(findLeaks(outbound, secretsOf(root))).toEqual([]);
-    // Phase 1 has no licence call yet, so a repo scan makes no outbound connection at all.
+    // The core scanner never calls home; the licence check lives in the CLI and MCP layers (tested below).
     expect(outbound).toEqual([]);
   });
 
@@ -93,6 +95,30 @@ describe('privacy', () => {
     }
     expect(findLeaks(outbound, secretsOf(root))).toEqual([]);
     expect(outbound).toEqual([]);
+  });
+
+  async function cliScan(root: string, home: string) {
+    const env = { ...process.env, LEGAL_LINT_HOME: home, LEGAL_LINT_API_URL: 'https://api.legal-lint.test' };
+    // fetch is looked up per call, so the spy above sees the licence request.
+    return run(['scan', root, '--json'], { stdout: { write: () => true }, stderr: { write: () => true } }, { env, fetch: (...a) => globalThis.fetch(...a), now: () => new Date() });
+  }
+
+  it('a CLI scan with a fresh licence cache makes no outbound call', async () => {
+    const root = path.join(FIXTURES_DIR, 'LL-01', 'fires-next-pages-document');
+    expect(await cliScan(root, await makeHome())).toBe(1);
+    expect(outbound).toEqual([]);
+  });
+
+  it('a CLI scan with a stale cache sends exactly one licence check, carrying only the key and version', async () => {
+    const root = path.join(FIXTURES_DIR, 'LL-01', 'fires-next-pages-document');
+    // Two days old: the check is attempted, blocked by this test, and the grace period lets the scan run.
+    const home = await makeHome({ checkedAt: new Date(Date.now() - 2 * 86_400_000) });
+    expect(await cliScan(root, home)).toBe(1);
+    expect(outbound.map((o) => o.channel)).toEqual(['fetch']);
+    const [url, init] = JSON.parse(outbound[0]!.payload) as [string, { body: string }];
+    expect(url).toBe('https://api.legal-lint.test/v1/licence');
+    expect(JSON.parse(init.body)).toEqual({ key: TEST_KEY, version: expect.any(String) });
+    expect(findLeaks(outbound, secretsOf(root))).toEqual([]);
   });
 
   it('the leak check itself catches a leaked line and a leaked path', () => {

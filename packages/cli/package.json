@@ -16,6 +16,7 @@
     "build": "tsup"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "2.3.1",
     "commander": "15.0.0",
     "ignore": "7.0.12",
     "typescript": "6.0.3",

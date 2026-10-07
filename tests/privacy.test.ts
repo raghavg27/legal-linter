@@ -1,12 +1,16 @@
 import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { cp, mkdtemp } from 'node:fs/promises';
 import http from 'node:http';
 import https from 'node:https';
 import net from 'node:net';
+import { tmpdir } from 'node:os';
 import path from 'node:path';
 import tls from 'node:tls';
+import { Client, InMemoryTransport } from '@modelcontextprotocol/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { scanRepo } from '@legal-lint/core';
 import { rules } from '@legal-lint/rules';
+import { startServer } from '../packages/cli/src/mcp/serve.ts';
 import { FIXTURES_DIR } from './helpers/fixtures.ts';
 
 // Product promise: the user's source code never leaves their machine.
@@ -69,6 +73,25 @@ describe('privacy', () => {
     expect(report.findings.length).toBeGreaterThan(0);
     expect(findLeaks(outbound, secretsOf(root))).toEqual([]);
     // Phase 1 has no licence call yet, so a repo scan makes no outbound connection at all.
+    expect(outbound).toEqual([]);
+  });
+
+  it('a repo scan through the MCP server sends nothing either', async () => {
+    const root = await mkdtemp(path.join(tmpdir(), 'legal-lint-privacy-'));
+    await cp(path.join(FIXTURES_DIR, 'LL-02', 'judgment-welcome-unanswered'), root, { recursive: true });
+    const [clientSide, serverSide] = InMemoryTransport.createLinkedPair();
+    const handle = startServer({ version: '0.0.0-test' }, serverSide);
+    const client = new Client({ name: 'privacy-test', version: '1.0.0' });
+    try {
+      await client.connect(clientSide);
+      const result = await client.callTool({ name: 'scan_repo', arguments: { path: root } });
+      expect(result.isError).toBeFalsy();
+      expect((result.structuredContent as { findings: unknown[] }).findings.length).toBeGreaterThan(0);
+    } finally {
+      await client.close();
+      await handle.close();
+    }
+    expect(findLeaks(outbound, secretsOf(root))).toEqual([]);
     expect(outbound).toEqual([]);
   });
 

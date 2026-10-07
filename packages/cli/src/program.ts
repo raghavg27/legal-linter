@@ -120,6 +120,15 @@ function buildProgram(io: Io, setExit: (code: number) => void): Command {
       io.stdout.write(`\nWrote ${file}. Skipped questions stay unknown, and rules that need them will ask.\n`);
     });
 
+  program
+    .command('mcp')
+    .description('Start the MCP server on stdio, for coding agents such as Claude Code and Cursor.')
+    .action(async () => {
+      // Loaded only here, so the scan commands do not pay for the MCP SDK.
+      const { serve } = await import('./mcp/serve.ts');
+      serve(VERSION);
+    });
+
   return program;
 }
 

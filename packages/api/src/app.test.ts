@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { SiteCapture } from '@legal-lint/core';
 import { createApp, type AppDeps, type LogEntry } from './app.ts';
 import { readConfig } from './config.ts';
@@ -124,6 +124,34 @@ describe('POST /v1/scan', () => {
     const body = await res.json();
     expect(body.error.reason).toBe('monthly_budget');
     expect(body.error.message).toMatch(/--local/);
+  });
+
+  it('remembers a key that hit its limit until the window ends, so repeats cost no store reads', async () => {
+    let t = NOW;
+    const { scan, good, store } = await setup({ now: () => t }, { SCANS_PER_KEY_HOUR: '1' });
+    expect((await scan(good.key)).status).toBe(200);
+    expect((await scan(good.key)).status).toBe(429);
+    const get = vi.spyOn(store, 'get');
+    const reserve = vi.spyOn(store, 'reserveScan');
+    const again = await scan(good.key);
+    expect(again.status).toBe(429);
+    expect((await again.json()).error.reason).toBe('key_hour');
+    expect(again.headers.get('retry-after')).toBe('3600');
+    expect(get).not.toHaveBeenCalled();
+    expect(reserve).not.toHaveBeenCalled();
+    t = new Date(NOW.getTime() + 3_600_000);
+    expect((await scan(good.key)).status).toBe(200);
+  });
+
+  it('remembers the monthly cap, so later scans skip the usage store', async () => {
+    const { scan, good, store } = await setup({}, { SCANS_PER_MONTH: '1' });
+    expect((await scan(good.key)).status).toBe(200);
+    expect((await scan(good.key)).status).toBe(503);
+    const reserve = vi.spyOn(store, 'reserveScan');
+    const again = await scan(good.key);
+    expect(again.status).toBe(503);
+    expect((await again.json()).error.reason).toBe('monthly_budget');
+    expect(reserve).not.toHaveBeenCalled();
   });
 
   it('answers 503 busy when every slot and queue place is taken', async () => {

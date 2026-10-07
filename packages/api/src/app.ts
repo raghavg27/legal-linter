@@ -5,7 +5,7 @@ import { licenceRequestSchema, scanRequestSchema, type ApiErrorReason } from '@l
 import type { SiteCapture } from '@legal-lint/core';
 import type { ApiConfig } from './config.ts';
 import { checkTarget, type Resolver, type TargetPolicy } from './egress/target.ts';
-import { checkKey, type KeyCheck } from './keys.ts';
+import { checkKey, hashKey, keyPrefix as prefixOf, type KeyCheck } from './keys.ts';
 import { BusyError, clientIp, FixedWindowLimiter, ScanQueue } from './limits.ts';
 import type { KeyStore, UsageStore } from './store.ts';
 
@@ -45,6 +45,20 @@ export function createApp(deps: AppDeps): Hono {
   const tooMany = (c: Context) => fail(c, 429, 'too_many_requests', 'Too many requests from this address. Try again later.', 3600);
   const bodyOf = async (c: Context) => c.req.json().catch(() => null);
 
+  // A key that hit its hourly or daily limit, and the monthly cap, are remembered
+  // until the window ends, so repeats are refused without store reads or a queue place.
+  type LimitReason = 'key_hour' | 'key_day' | 'monthly_budget';
+  const blockedKeys = new Map<string, { until: number; reason: 'key_hour' | 'key_day' }>();
+  let monthBlockedUntil = 0;
+  const limitReached = (c: Context, reason: LimitReason, retryAfterSec: number) => {
+    if (reason === 'monthly_budget') {
+      return fail(c, 503, 'monthly_budget', 'The hosted scanner has used its scans for this month. Scan on your own machine with --local.', retryAfterSec);
+    }
+    const window = reason === 'key_hour' ? 'hourly' : 'daily';
+    return fail(c, 429, reason, `This key has used its ${window} hosted scans. Try later, or scan on your own machine with --local.`, retryAfterSec);
+  };
+  const secondsUntil = (until: number, t: Date) => Math.max(1, Math.ceil((until - t.getTime()) / 1000));
+
   const app = new Hono();
   app.use('/v1/*', bodyLimit({ maxSize: 4 * 1024, onError: (c) => fail(c, 413, 'bad_request', 'Request body too large.') }));
   app.onError((_e, c) => fail(c, 500, 'internal', 'Something went wrong on the Legal Lint server.'));
@@ -75,6 +89,14 @@ export function createApp(deps: AppDeps): Hono {
     const t = now();
     if (failures.blocked(ip, t)) return tooMany(c);
     const bearer = /^Bearer (\S+)$/.exec(c.req.header('authorization') ?? '');
+    if (bearer) {
+      const blocked = blockedKeys.get(hashKey(bearer[1]!));
+      if (blocked && blocked.until > t.getTime()) {
+        log({ route: 'scan', outcome: blocked.reason, keyPrefix: prefixOf(bearer[1]!) });
+        return limitReached(c, blocked.reason, secondsUntil(blocked.until, t));
+      }
+      if (blocked) blockedKeys.delete(hashKey(bearer[1]!));
+    }
     const check: KeyCheck = bearer ? await checkKey(deps.keys, bearer[1]!, t) : { valid: false, reason: 'unknown' };
     if (!check.valid) {
       failures.hit(ip, t);
@@ -83,6 +105,10 @@ export function createApp(deps: AppDeps): Hono {
       return fail(c, 401, 'unauthorized', `The licence key is ${why}.`);
     }
     const keyPrefix = check.record.prefix;
+    if (monthBlockedUntil > t.getTime()) {
+      log({ route: 'scan', outcome: 'monthly_budget', keyPrefix });
+      return limitReached(c, 'monthly_budget', secondsUntil(monthBlockedUntil, t));
+    }
     const body = scanRequestSchema.safeParse(await bodyOf(c));
     if (!body.success) return fail(c, 400, 'bad_request', 'Expected {"url","version"} and nothing else.');
     const target = await checkTarget(body.data.url, deps.policy, deps.resolve);
@@ -96,14 +122,14 @@ export function createApp(deps: AppDeps): Hono {
     try {
       return await queue.run(async () => {
         // Counted when Chromium is about to start, since that is when compute is spent.
-        const reservation = await deps.usage.reserveScan(check.hash, now(), cfg.limits);
+        const reservedAt = now();
+        const reservation = await deps.usage.reserveScan(check.hash, reservedAt, cfg.limits);
         if (!reservation.ok) {
           done(reservation.reason);
-          if (reservation.reason === 'monthly_budget') {
-            return fail(c, 503, 'monthly_budget', 'The hosted scanner has used its scans for this month. Scan on your own machine with --local.', reservation.retryAfterSec);
-          }
-          const window = reservation.reason === 'key_hour' ? 'hourly' : 'daily';
-          return fail(c, 429, reservation.reason, `This key has used its ${window} hosted scans. Try later, or scan on your own machine with --local.`, reservation.retryAfterSec);
+          const until = reservedAt.getTime() + reservation.retryAfterSec * 1000;
+          if (reservation.reason === 'monthly_budget') monthBlockedUntil = until;
+          else blockedKeys.set(check.hash, { until, reason: reservation.reason });
+          return limitReached(c, reservation.reason, reservation.retryAfterSec);
         }
         try {
           const capture = await deps.scanner.scan(target.url);

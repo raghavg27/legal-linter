@@ -133,3 +133,14 @@ describe('intake coverage', () => {
     expect(INTAKE_SPECS.map((s) => s.key).sort()).toEqual(Object.keys(intakeSchema.shape).sort());
   });
 });
+
+describe('judgment output', () => {
+  it('prints the question, the options and how to record an answer', async () => {
+    const { code, stdout } = await cli('scan', path.join(FIXTURES_DIR, 'LL-02', 'judgment-welcome-unanswered'));
+    expect(code).toBe(EXIT.clean);
+    expect(stdout).toContain('needs judgment');
+    expect(stdout).toContain('marketing: ');
+    expect(stdout).toContain('transactional: ');
+    expect(stdout).toMatch(/"LL-02-[0-9a-f]{10}": \{ "answer": "<marketing\|transactional>", "contentHash": "[0-9a-f]{16}"/);
+  });
+});

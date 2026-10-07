@@ -54,7 +54,13 @@ function formatFinding(f: Finding, paint: Paint): string[] {
     lines.push(`  ${paint(YELLOW, 'Answer in legal-lint.config.json to confirm whether this applies:')}`);
     for (const q of f.questions) lines.push(`    intake.${q.key}: ${q.question}`);
   }
-  if (f.status === 'needs_judgment') lines.push(`  ${paint(YELLOW, 'Question:')} ${f.judgment.question}`);
+  if (f.status === 'needs_judgment') {
+    lines.push(`  ${paint(YELLOW, 'Question:')} ${f.judgment.question}`);
+    for (const o of f.judgment.options) lines.push(`    ${o.value}: ${o.meaning}`);
+    lines.push(
+      paint(DIM, `  To answer, add to legal-lint.config.json under "judgments": "${f.id}": { "answer": "<${f.judgment.options.map((o) => o.value).join('|')}>", "contentHash": "${f.judgment.contentHash}", "answeredAt": "<ISO date>" }`),
+    );
+  }
   lines.push(`  ${paint(DIM, `Fix: ${f.fixType} · finding ${f.id}`)}`);
   return lines;
 }
